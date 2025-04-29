@@ -1,35 +1,79 @@
 #!/bin/bash
 
-OBJ_API_NAME="$1"
-ALIAS_ORG="$2"
+PACKAGE_XML="manifest/package.xml"
+ALIAS_ORG="$1"
 
-if [ -z "$OBJ_API_NAME" ] || [ -z "$ALIAS_ORG" ]; then
-  echo "❌ Uso: ./generate_object_md.sh NomeDoObjeto__c aliasDaOrg"
+if [ -z "$ALIAS_ORG" ]; then
+  echo "❌ Uso: ./generate_docs_from_package.sh aliasDaOrg"
   exit 1
 fi
 
 mkdir -p tmp
 mkdir -p _docs/objetcs/custom
 
-JSON_FILE="tmp/${OBJ_API_NAME}_describe.json"
-MD_FILE="_docs/objetcs/custom/_model-${OBJ_API_NAME}.md"
+# 📦 Extraí todos os objetos do package.xml onde <name> é CustomObject
+echo "📦 Lendo objetos do package.xml..."
+OBJETOS=$(xmllint --xpath "//types[name='CustomObject']/members/text()" "$PACKAGE_XML" 2>/dev/null)
 
-# 1. Extrair JSON
-sf data describe sobject --sobject-type "$OBJ_API_NAME" --target-org "$ALIAS_ORG" --json > "$JSON_FILE"
+if [ -z "$OBJETOS" ]; then
+  echo "⚠️ Nenhum objeto CustomObject encontrado no package.xml"
+  exit 1
+fi
 
-# 2. Captura a descrição do objeto
-OBJ_LABEL=$(jq -r '.result.label' "$JSON_FILE")
-OBJ_DESCRIPTION=$(jq -r '.result.description // "Descrição extraída do metadata aqui."' "$JSON_FILE")
+IFS=$'\n'
+for OBJ in $OBJETOS; do
+  echo "🔎 Trabalhando no objeto $OBJ..."
 
-# 3. Começa o markdown
-cat <<EOF > "$MD_FILE"
-# _model-${OBJ_API_NAME} (Custom Object)
+  # 1. Descreve o objeto e salva JSON temporário
+  sf data describe sobject --sobject-type "$OBJ" --target-org "$ALIAS_ORG" --json > "tmp/${OBJ}.json"
+  
+  if [ ! -f "tmp/${OBJ}.json" ]; then
+    echo "⚠️ Erro ao descrever o objeto $OBJ. Pulando."
+    continue
+  fi
 
-<!-- Resumo: description -->
+  # 2. Gera tabela de campos
+  TABLE=$(jq -r '
+    .result.fields[] |
+    [
+      .label,
+      .name,
+      .type,
+      (if .nillable == false then "Sim" else "" end),
+      (.inlineHelpText // "-"),
+      (.description // "-")
+    ] |
+    @tsv
+  ' "tmp/${OBJ}.json" | awk -F '\t' 'BEGIN {
+    print "| label | fullName | type | required | inlineHelpText | description |";
+    print "|:------|:---------|:-----|:--------:|:---------------|:------------|";
+  } {
+    printf "| %s | `%s` | `%s` | %s | %s | %s |\n", $1, $2, $3, $4, $5, $6;
+  }')
+
+  MD_FILE="_docs/objetcs/custom/_model-${OBJ}.md"
+
+  if [ -f "$MD_FILE" ]; then
+    echo "✏️ Atualizando $MD_FILE..."
+    # Atualiza apenas o bloco de campos
+    awk -v newTable="$TABLE" '
+      BEGIN { inblock=0 }
+      /<!-- start-campos -->/ { print; print newTable; inblock=1; next }
+      /<!-- end-campos -->/ { inblock=0 }
+      !inblock
+    ' "$MD_FILE" > "${MD_FILE}.tmp"
+
+    mv "${MD_FILE}.tmp" "$MD_FILE"
+  else
+    echo "🆕 Criando novo $MD_FILE..."
+
+    cat <<EOF > "$MD_FILE"
+# _model-${OBJ} (Custom Object)
+
 ## Resumo
 
 <!-- start-resumo -->
-$OBJ_DESCRIPTION
+(Descrição manual ou extraída futuramente)
 <!-- end-resumo -->
 
 ---
@@ -37,27 +81,7 @@ $OBJ_DESCRIPTION
 ## Campos
 
 <!-- start-campos -->
-
-| label | fullName | type | required | inlineHelpText | description |
-|:------|:---------|:-----|:--------:|:---------------|:------------|
-EOF
-
-# 4. Adiciona a tabela com os campos
-jq -r '
-  .result.fields[] |
-  "| " +
-  (.label // "-") + " | " +
-  (.name // "-") + " | " +
-  (.type // "-") + " | " +
-  (if .nillable == false then "Sim" else "Não" end) + " | " +
-  (.inlineHelpText // "-") + " | " +
-  (.description // "-") + " |"
-' "$JSON_FILE" >> "$MD_FILE"
-
-# 5. Finaliza com seções manuais
-cat <<EOF >> "$MD_FILE"
-
-(gerado automaticamente)
+$TABLE
 <!-- end-campos -->
 
 ---
@@ -67,12 +91,12 @@ cat <<EOF >> "$MD_FILE"
 
 ---
 
-## Código back-end (Classe, Trigger)
+## Código High-Code relacionado
 - (Preencher manualmente)
 
 ---
 
-## Componentes (Interfaces e Telas)
+## Interfaces e Telas
 - (Preencher manualmente)
 
 ---
@@ -83,11 +107,14 @@ cat <<EOF >> "$MD_FILE"
 ---
 
 ## Histórico de Alterações
-<!-- preencher manualmente -->
 
-| Data | Alteração | Responsável |
-|:-----|:----------|:------------|
-| $(date +%Y-%m-%d) | Criação da documentação inicial | Millena Ferreira |
+| Data       | Alteração                  | Responsável         |
+|------------|----------------------------|----------------------|
+| $(date +%Y-%m-%d) | Criação da documentação inicial | Millena Ferreira       |
 EOF
 
-echo "✅ Documentação gerada: $MD_FILE"
+  fi
+
+done
+
+echo "✅ Documentação finalizada com sucesso!"
