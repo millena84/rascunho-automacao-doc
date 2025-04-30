@@ -1,79 +1,39 @@
 #!/bin/bash
 
-PACKAGE_XML="manifest/package.xml"
-ALIAS_ORG="$1"
+# Mimi: script para gerar documentação Markdown de um objeto Salesforce DX
 
-if [ -z "$ALIAS_ORG" ]; then
-  echo "❌ Uso: ./generate_docs_from_package.sh aliasDaOrg"
+echo "Digite o API Name do objeto (ex: ATU_nmCustomObj__c):"
+read OBJ_API
+
+# Diretórios fixos
+OBJ_DIR="force-app/main/default/objects/$OBJ_API"
+XML_FILE="$OBJ_DIR/$OBJ_API.object-meta.xml"
+DEST_DIR="_docs/_org/obj/custom"
+ARQUIVO_MD="$DEST_DIR/_model-$OBJ_API.md"
+
+# Verificações básicas
+if [ ! -f "$XML_FILE" ]; then
+  echo "❌ Arquivo $XML_FILE não encontrado."
   exit 1
 fi
 
-mkdir -p tmp
-mkdir -p _docs/objetcs/custom
+mkdir -p "$DEST_DIR"
 
-# 📦 Extraí todos os objetos do package.xml onde <name> é CustomObject
-echo "📦 Lendo objetos do package.xml..."
-OBJETOS=$(xmllint --xpath "//types[name='CustomObject']/members/text()" "$PACKAGE_XML" 2>/dev/null)
+# Pega data atual
+DATA_HOJE=$(date "+%Y-%m-%d")
 
-if [ -z "$OBJETOS" ]; then
-  echo "⚠️ Nenhum objeto CustomObject encontrado no package.xml"
-  exit 1
-fi
+# Extrai descrição do objeto
+DESC_OBJETO=$(grep -oPm1 "(?<=<description>)[^<]+" "$XML_FILE")
 
-IFS=$'\n'
-for OBJ in $OBJETOS; do
-  echo "🔎 Trabalhando no objeto $OBJ..."
+# Início do Markdown
+cat > "$ARQUIVO_MD" << EOL
+# _model-$OBJ_API (Custom Object)
 
-  # 1. Descreve o objeto e salva JSON temporário
-  sf data describe sobject --sobject-type "$OBJ" --target-org "$ALIAS_ORG" --json > "tmp/${OBJ}.json"
-  
-  if [ ! -f "tmp/${OBJ}.json" ]; then
-    echo "⚠️ Erro ao descrever o objeto $OBJ. Pulando."
-    continue
-  fi
-
-  # 2. Gera tabela de campos
-  TABLE=$(jq -r '
-    .result.fields[] |
-    [
-      .label,
-      .name,
-      .type,
-      (if .nillable == false then "Sim" else "" end),
-      (.inlineHelpText // "-"),
-      (.description // "-")
-    ] |
-    @tsv
-  ' "tmp/${OBJ}.json" | awk -F '\t' 'BEGIN {
-    print "| label | fullName | type | required | inlineHelpText | description |";
-    print "|:------|:---------|:-----|:--------:|:---------------|:------------|";
-  } {
-    printf "| %s | `%s` | `%s` | %s | %s | %s |\n", $1, $2, $3, $4, $5, $6;
-  }')
-
-  MD_FILE="_docs/objetcs/custom/_model-${OBJ}.md"
-
-  if [ -f "$MD_FILE" ]; then
-    echo "✏️ Atualizando $MD_FILE..."
-    # Atualiza apenas o bloco de campos
-    awk -v newTable="$TABLE" '
-      BEGIN { inblock=0 }
-      /<!-- start-campos -->/ { print; print newTable; inblock=1; next }
-      /<!-- end-campos -->/ { inblock=0 }
-      !inblock
-    ' "$MD_FILE" > "${MD_FILE}.tmp"
-
-    mv "${MD_FILE}.tmp" "$MD_FILE"
-  else
-    echo "🆕 Criando novo $MD_FILE..."
-
-    cat <<EOF > "$MD_FILE"
-# _model-${OBJ} (Custom Object)
-
+<!-- Resumo: description -->
 ## Resumo
 
 <!-- start-resumo -->
-(Descrição manual ou extraída futuramente)
+${DESC_OBJETO:-Descrição extraída do metadata aqui.}
 <!-- end-resumo -->
 
 ---
@@ -81,7 +41,26 @@ for OBJ in $OBJETOS; do
 ## Campos
 
 <!-- start-campos -->
-$TABLE
+
+| label | fullName | type | required | inlineHelpText |  description |
+|:------|:---------|:-----|:---------|:---------------|:-------------|
+EOL
+
+# Extrai campos e preenche tabela
+for FIELD_FILE in "$OBJ_DIR/fields/"*.field-meta.xml; do
+  LABEL=$(grep -oPm1 "(?<=<label>)[^<]+" "$FIELD_FILE")
+  API=$(basename "$FIELD_FILE" .field-meta.xml)
+  TYPE=$(grep -oPm1 "(?<=<type>)[^<]+" "$FIELD_FILE")
+  REQUIRED=$(grep -q "<required>true</required>" "$FIELD_FILE" && echo "Sim" || echo "Não")
+  HELPTEXT=$(grep -oPm1 "(?<=<inlineHelpText>)[^<]+" "$FIELD_FILE" || echo "-")
+  DESCRIPTION=$(grep -oPm1 "(?<=<description>)[^<]+" "$FIELD_FILE" || echo "-")
+
+  echo "| $LABEL | $API | $TYPE | $REQUIRED | $HELPTEXT | $DESCRIPTION |" >> "$ARQUIVO_MD"
+done
+
+cat >> "$ARQUIVO_MD" << EOL
+
+(gerado automaticamente)
 <!-- end-campos -->
 
 ---
@@ -107,14 +86,11 @@ $TABLE
 ---
 
 ## Histórico de Alterações
+<!-- preencher manualmente -->
 
-| Data       | Alteração                  | Responsável         |
-|------------|----------------------------|----------------------|
-| $(date +%Y-%m-%d) | Criação da documentação inicial | Millena Ferreira       |
-EOF
+| Data | Alteração | Responsável |
+|:-----|:----------|:------------|
+| $DATA_HOJE | Criação da documentação inicial | Millena Ferreira |
+EOL
 
-  fi
-
-done
-
-echo "✅ Documentação finalizada com sucesso!"
+echo "✅ Documentação gerada em: $ARQUIVO_MD"
