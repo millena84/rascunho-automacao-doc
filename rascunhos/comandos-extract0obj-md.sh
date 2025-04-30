@@ -44,3 +44,38 @@ if [[ "$TYPE" == "Picklist" ]]; then
     printf "| %s | %s | %s | %s |\n" "$LABEL" "$FULLNAME" "$STATUS" "$ISDEFAULT" >> "$ARQUIVO_MD"
   done
 fi
+
+
+## formata valor picklist 2:
+if [[ "$TYPE" == "Picklist" ]]; then
+  echo "" >> "$ARQUIVO_MD"
+  echo "### Valores para o campo: $LABEL - $API" >> "$ARQUIVO_MD"
+  echo "" >> "$ARQUIVO_MD"
+  echo "| label | fullName | status | default |" >> "$ARQUIVO_MD"
+  echo "|:------|:---------|:--------|:--------|" >> "$ARQUIVO_MD"
+
+  in_value_block=false
+  LABEL=""
+  FULLNAME=""
+  STATUS=""
+  DEFAULT=""
+
+  while IFS= read -r line; do
+    [[ "$line" == *"<value>"* ]] && in_value_block=true
+    [[ "$line" == *"</value>"* ]] && {
+      # Linha pronta
+      [[ "$DEFAULT" == "true" ]] && DEFAULT="Sim" || DEFAULT="Não"
+      printf "| %s | %s | %s | %s |\n" "$LABEL" "$FULLNAME" "$STATUS" "$DEFAULT" >> "$ARQUIVO_MD"
+      # Reseta
+      in_value_block=false
+      LABEL=""; FULLNAME=""; STATUS=""; DEFAULT=""
+    }
+
+    if $in_value_block; then
+      [[ "$line" =~ \<label\>(.*)\</label\> ]] && LABEL="${BASH_REMATCH[1]}"
+      [[ "$line" =~ \<fullName\>(.*)\</fullName\> ]] && FULLNAME="${BASH_REMATCH[1]}"
+      [[ "$line" =~ \<status\>(.*)\</status\> ]] && STATUS="${BASH_REMATCH[1]}"
+      [[ "$line" =~ \<default\>(.*)\</default\> ]] && DEFAULT="${BASH_REMATCH[1]}"
+    fi
+  done < "$FIELD_FILE"
+fi
