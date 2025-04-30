@@ -112,3 +112,33 @@ if [[ "$TYPE" == "Picklist" ]]; then
   done < "$FIELD_FILE"
 fi
 
+# formata picklist 4:
+if [[ "$TYPE" == "Picklist" ]]; then
+  echo "" >> "$ARQUIVO_MD"
+  echo "### Valores para o campo: $LABEL - $API" >> "$ARQUIVO_MD"
+  echo "" >> "$ARQUIVO_MD"
+  echo "| label | fullName | status | default |" >> "$ARQUIVO_MD"
+  echo "|:------|:---------|:--------|:--------|" >> "$ARQUIVO_MD"
+
+  in_block=false
+  LABEL=""; FULLNAME=""; STATUS=""; DEFAULT=""
+
+  while IFS= read -r line; do
+    line=$(echo "$line" | sed 's/^[[:space:]]*//')  # remove espaços no início
+
+    if [[ "$line" == "<value>" ]]; then
+      in_block=true
+    elif [[ "$line" == "</value>" ]]; then
+      [[ "$DEFAULT" == "true" ]] && DEFAULT="Sim" || DEFAULT="Não"
+      printf "| %s | %s | %s | %s |\n" "$LABEL" "$FULLNAME" "$STATUS" "$DEFAULT" >> "$ARQUIVO_MD"
+      LABEL=""; FULLNAME=""; STATUS=""; DEFAULT=""; in_block=false
+    fi
+
+    if $in_block; then
+      [[ "$line" =~ \<label\>(.*)\</label\> ]] && LABEL="${BASH_REMATCH[1]}"
+      [[ "$line" =~ \<fullName\>(.*)\</fullName\> ]] && FULLNAME="${BASH_REMATCH[1]}"
+      [[ "$line" =~ \<status\>(.*)\</status\> ]] && STATUS="${BASH_REMATCH[1]}"
+      [[ "$line" =~ \<default\>(.*)\</default\> ]] && DEFAULT="${BASH_REMATCH[1]}"
+    fi
+  done < "$FIELD_FILE"
+fi
