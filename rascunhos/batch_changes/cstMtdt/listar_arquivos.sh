@@ -4,21 +4,36 @@ PASTA=${1:-.}
 SAIDA=${2:-lista_com_labels.txt}
 
 echo "🗂️  Gerando lista com label, CAN e FORM a partir dos XMLs..."
-echo "" > "$SAIDA"
+echo "Arquivo|Label|CAN|FORM" > "$SAIDA"
 
 for file in "$PASTA"/*.xml; do
   nome_arquivo=$(basename "$file")
 
+  # Extrai label
   label=$(grep -oP '(?<=<label>).*?(?=</label>)' "$file")
 
-  # Extrai o valor da <value> quando <field>CAN</field> aparece antes
+  # Extrai CAN
   can=$(awk '
-    /<field>CAN<\/field>/ {getline; match($0, /<value.*>(.*)<\/value>/, a); print a[1]}
+    BEGIN {found=0}
+    /<field>CAN<\/field>/ {found=1; next}
+    found && /<value/ {
+      gsub(/.*<value[^>]*>/, "", $0)
+      gsub(/<\/value>.*/, "", $0)
+      print $0
+      exit
+    }
   ' "$file")
 
-  # Extrai o valor da <value> quando <field>FORM</field> aparece antes
+  # Extrai FORM
   form=$(awk '
-    /<field>FORM<\/field>/ {getline; match($0, /<value.*>(.*)<\/value>/, a); print a[1]}
+    BEGIN {found=0}
+    /<field>FORM<\/field>/ {found=1; next}
+    found && /<value/ {
+      gsub(/.*<value[^>]*>/, "", $0)
+      gsub(/<\/value>.*/, "", $0)
+      print $0
+      exit
+    }
   ' "$file")
 
   echo "${nome_arquivo}|${label}|${can}|${form}" >> "$SAIDA"
