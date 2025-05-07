@@ -16,11 +16,11 @@
     </values>
     <values>
         <field>WWx_CAN__c</field>
-        <value xsi:type="string">MOBILE</value>
+        <value xsi:type="string">{{DOMINIO_CANAL}}</value>
     </values>
     <values>
         <field>WWx_FORM__c</field>
-        <value xsi:type="string">SS - BANNER - IMAGEM</value>
+        <value xsi:type="string">{{DOMINIO_FORMATO}}</value>
     </values>
     <values>
         <field>WWx_OBJ__c</field>
