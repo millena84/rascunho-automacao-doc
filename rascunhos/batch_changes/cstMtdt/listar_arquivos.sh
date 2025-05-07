@@ -9,30 +9,30 @@ echo "Arquivo|Label|CAN|FORM" > "$SAIDA"
 for file in "$PASTA"/*.xml; do
   nome_arquivo=$(basename "$file")
 
-  # Extrai label
+  # Extrai label (deve estar sempre em uma linha só)
   label=$(grep -oP '(?<=<label>).*?(?=</label>)' "$file")
 
   # Extrai CAN
   can=$(awk '
-    BEGIN {found=0}
-    /<field>CAN<\/field>/ {found=1; next}
-    found && /<value/ {
-      gsub(/.*<value[^>]*>/, "", $0)
-      gsub(/<\/value>.*/, "", $0)
-      print $0
-      exit
+    BEGIN {in_field=0}
+    /<field>[[:space:]]*CAN[[:space:]]*<\/field>/ {in_field=1; next}
+    in_field && /<value/ {
+      if (match($0, /<value[^>]*>([^<]*)<\/value>/, arr)) {
+        print arr[1]
+        exit
+      }
     }
   ' "$file")
 
   # Extrai FORM
   form=$(awk '
-    BEGIN {found=0}
-    /<field>FORM<\/field>/ {found=1; next}
-    found && /<value/ {
-      gsub(/.*<value[^>]*>/, "", $0)
-      gsub(/<\/value>.*/, "", $0)
-      print $0
-      exit
+    BEGIN {in_field=0}
+    /<field>[[:space:]]*FORM[[:space:]]*<\/field>/ {in_field=1; next}
+    in_field && /<value/ {
+      if (match($0, /<value[^>]*>([^<]*)<\/value>/, arr)) {
+        print arr[1]
+        exit
+      }
     }
   ' "$file")
 
