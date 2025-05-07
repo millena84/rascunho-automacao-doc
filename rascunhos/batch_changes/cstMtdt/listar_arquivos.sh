@@ -9,42 +9,34 @@ echo "Arquivo|Label|CAN|FORM" > "$SAIDA"
 for file in "$PASTA"/*.xml; do
   nome_arquivo=$(basename "$file")
 
-  # Extrai <label>
-  label=$(grep -oP '(?<=<label>).*?(?=</label>)' "$file")
+  # Extrai o label (linha única)
+  label=$(grep -oP '<label>\K[^<]+' "$file")
 
-  # Inicializa variáveis
+  # Inicializa
   can=""
   form=""
+  ultima_field=""
 
-  # Extrai os blocos de <values> e lê <field> e <value> agrupadamente
-  awk '
-    BEGIN { field=""; value=""; in_block=0 }
-    /<values>/ { in_block=1; next }
-    /<\/values>/ {
-      in_block=0
-      if (field == "CAN")  can = value
-      if (field == "FORM") form = value
-      field=""; value=""
-      next
-    }
-    in_block && /<field>/ {
-      match($0, /<field>(.*)<\/field>/, a)
-      field = a[1]
-      next
-    }
-    in_block && /<value/ {
-      gsub(/.*<value[^>]*>/, "", $0)
-      gsub(/<\/value>.*/, "", $0)
-      value = $0
-      next
-    }
-    END {
-      print can "|" form
-    }
-  ' "$file" | while IFS="|" read -r can form; do
-    echo "${nome_arquivo}|${label}|${can}|${form}" >> "$SAIDA"
-  done
+  # Processa linha a linha
+  while IFS= read -r line; do
+    # Detecta <field> e guarda temporariamente
+    if [[ "$line" =~ \<field\>(.*)\</field\> ]]; then
+      ultima_field="${BASH_REMATCH[1]}"
+    fi
 
+    # Detecta <value> e associa ao último field se for CAN ou FORM
+    if [[ "$line" =~ \<value[^\>]*\>(.*)\</value\> ]]; then
+      valor="${BASH_REMATCH[1]}"
+      if [[ "$ultima_field" == "CAN" ]]; then
+        can="$valor"
+      elif [[ "$ultima_field" == "FORM" ]]; then
+        form="$valor"
+      fi
+      ultima_field=""  # reseta
+    fi
+  done < "$file"
+
+  echo "${nome_arquivo}|${label}|${can}|${form}" >> "$SAIDA"
 done
 
 echo "✅ Lista salva em: $SAIDA"
