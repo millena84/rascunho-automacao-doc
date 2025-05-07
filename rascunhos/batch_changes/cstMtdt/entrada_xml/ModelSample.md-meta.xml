@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomMetadata xmlns="http://soap.sforce.com/2006/04/metadata" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+    <label>LABEL CST</label>
+    <protected>false</protected>
+    <values>
+        <field>WWx_CampoRelacObjFilho__c</field>
+        <value xsi:type="string">WWx_BrfMktItm__c</value>
+    </values>
+    <values>
+        <field>WWx_CampoRelacObjPai__c</field>
+        <value xsi:type="string">WWx_DadosForm_MB__r</value>
+    </values>
+    <values>
+        <field>WWx_CamposTela__c</field>
+        <value xsi:type="string">WWx_HtmlWrn__c,WWx_Obs__c</value>
+    </values>
+    <values>
+        <field>WWx_CAN__c</field>
+        <value xsi:type="string">MOBILE</value>
+    </values>
+    <values>
+        <field>WWx_FORM__c</field>
+        <value xsi:type="string">SS - BANNER - IMAGEM</value>
+    </values>
+    <values>
+        <field>WWx_OBJ__c</field>
+        <value xsi:type="string">WWx_DadosForm_MB__c</value>
+    </values>
+    <values>
+        <field>WWx_TelUtil__c</field>
+        <value xsi:type="string">Ent de Mkt</value>
+    </values>
+</CustomMetadata>
