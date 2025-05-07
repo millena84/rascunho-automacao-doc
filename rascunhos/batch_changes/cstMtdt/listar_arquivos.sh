@@ -9,28 +9,37 @@ echo "Arquivo|Label|CAN|FORM" > "$SAIDA"
 for file in "$PASTA"/*.xml; do
   nome_arquivo=$(basename "$file")
 
+  # Extrai <label>
   label=$(grep -oP '(?<=<label>).*?(?=</label>)' "$file")
 
-  CAN=""
-  FORM=""
+  # Inicializa variáveis
+  can=""
+  form=""
 
-  # Esse awk percorre o XML e associa o último <field> com o próximo <value>
+  # Extrai os blocos de <values> e lê <field> e <value> agrupadamente
   awk '
-    /<field>/ {
-      if ($0 ~ /<field>CAN<\/field>/)  last="CAN";
-      else if ($0 ~ /<field>FORM<\/field>/) last="FORM";
-      else last="";
-      next;
+    BEGIN { field=""; value=""; in_block=0 }
+    /<values>/ { in_block=1; next }
+    /<\/values>/ {
+      in_block=0
+      if (field == "CAN")  can = value
+      if (field == "FORM") form = value
+      field=""; value=""
+      next
     }
-    /<value/ && last != "" {
+    in_block && /<field>/ {
+      match($0, /<field>(.*)<\/field>/, a)
+      field = a[1]
+      next
+    }
+    in_block && /<value/ {
       gsub(/.*<value[^>]*>/, "", $0)
       gsub(/<\/value>.*/, "", $0)
-      if (last == "CAN") can=$0;
-      if (last == "FORM") form=$0;
-      last="";
+      value = $0
+      next
     }
     END {
-      print can "|" form;
+      print can "|" form
     }
   ' "$file" | while IFS="|" read -r can form; do
     echo "${nome_arquivo}|${label}|${can}|${form}" >> "$SAIDA"
