@@ -39,7 +39,10 @@ COMPONENTES=$(node -e "
   }
 ")
 
-IFS='||' read -ra COMPONENTES_ARRAY <<< "$COMPONENTES"
+#IFS='||' read -ra COMPONENTES_ARRAY <<< "$COMPONENTES"
+IFS=$'\n' read -rd '' -a COMPONENTES_ARRAY < <(
+  echo "$COMPONENTES" | tr '|' '\n' | grep -v '^\s*$'
+)
 
 for compJson in "${COMPONENTES_ARRAY[@]}"; do
   tipo=$(node -e "console.log(JSON.parse(process.argv[1]).tipoComponente)" "$compJson")
