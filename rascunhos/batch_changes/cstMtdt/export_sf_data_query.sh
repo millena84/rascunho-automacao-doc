@@ -33,3 +33,12 @@ sf data query \
   --result-format csv > "$EXPORT_DIR/contacts.csv"
 
 echo "✅ Arquivos exportados para: $EXPORT_DIR"
+
+
+# Converte resultado tabular para CSV
+echo "📄 Convertendo resultado tabulado em CSV..."
+grep -v '^[+│\-]' "$RAW_FILE" \
+  | awk -F '│' 'NF >= 3 { print $2 "," $3 }' \
+  | sed 's/^ *//;s/ *$//' > "$OUTPUT_CSV"
+
+echo "✅ Dados exportados e convertidos com sucesso: $OUTPUT_CSV"
