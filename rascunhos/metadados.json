@@ -1,0 +1,12 @@
+{
+  "orgAlias": "meuAliasDev",
+  "componentes": [
+    {
+      "tipoComponente": "CustomObject",
+      "filtros": ["WW2", "__mdt"]
+    },
+    {
+      "tipoComponente": "PermissionSet"
+    }
+  ]
+}
