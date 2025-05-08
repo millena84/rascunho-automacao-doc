@@ -22,3 +22,15 @@ if [[ -d "$PASTA_DESTINO/unpackaged" ]]; then
 fi
 
 echo "✅ Extração finalizada em: $PASTA_DESTINO/"
+
+#====== testar
+#!/bin/bash
+
+echo "🔧 Adicionando '-meta.xml' ao final de todos os arquivos..."
+
+for f in *; do
+  [[ -f "$f" && "$f" != *-meta.xml ]] && mv "$f" "$f-meta.xml" && echo "✅ $f → $f-meta.xml"
+done
+
+echo "🏁 Finalizado!"
+
