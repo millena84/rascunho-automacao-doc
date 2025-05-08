@@ -24,7 +24,7 @@ sf data query \
   --query "SELECT Id, Name, Industry FROM Account LIMIT 5" \
   --target-org "$ORG_ALIAS" \
   --result-format csv \
-  --output-file "$EXPORT_DIR/accounts.csv"
+  > "$EXPORT_DIR/accounts.csv"
 
 # Exporta Contacts associados
 echo "📤 Exportando Contacts para CSV..."
@@ -32,7 +32,7 @@ sf data query \
   --query "SELECT Id, FirstName, LastName, Email, AccountId FROM Contact WHERE AccountId IN (SELECT Id FROM Account LIMIT 5)" \
   --target-org "$ORG_ALIAS" \
   --result-format csv \
-  --output-file "$EXPORT_DIR/contacts.csv"
+  > "$EXPORT_DIR/contacts.csv"
 
 # Finalização
 echo "✅ Dados exportados com sucesso em: $EXPORT_DIR"
