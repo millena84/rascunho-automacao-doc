@@ -24,13 +24,13 @@ fi
 echo "✅ Extração finalizada em: $PASTA_DESTINO/"
 
 #====== testar
-#!/bin/bash
+echo "✅ Arquivos extraídos para: $PASTA_DESTINO"
 
-echo "🔧 Adicionando '-meta.xml' ao final de todos os arquivos..."
-
-for f in *; do
-  [[ -f "$f" && "$f" != *-meta.xml ]] && mv "$f" "$f-meta.xml" && echo "✅ $f → $f-meta.xml"
+# 5️⃣ Renomeia todos os arquivos para adicionar -meta.xml
+echo "🛠️  Ajustando nomes dos arquivos com -meta.xml"
+find "$PASTA_DESTINO" -type f ! -name "*-meta.xml" | while read -r f; do
+  novo="${f}-meta.xml"
+  mv "$f" "$novo"
+  echo "✅ $f → $novo"
 done
-
-echo "🏁 Finalizado!"
 
