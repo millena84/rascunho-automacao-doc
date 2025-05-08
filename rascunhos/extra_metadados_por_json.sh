@@ -1,7 +1,10 @@
 #!/bin/bash
 
-CONFIG_FILE="./config_metadata.json"
+CONFIG_FILE="./10_extract_org_metadata.json"
 DATAHORA=$(date +"%Y%m%d_%H%M%S")
+PASTA_SAIDA="./metadados"
+
+mkdir -p "$PASTA_SAIDA"
 
 # 🎯 Verifica se o JSON existe
 if [[ ! -f "$CONFIG_FILE" ]]; then
@@ -9,20 +12,17 @@ if [[ ! -f "$CONFIG_FILE" ]]; then
   exit 1
 fi
 
-# 🔹 Extrai alias da org com node
+# 🔹 Extrai alias da org com segurança
 ORG_ALIAS=$(node -e "
   try {
-    console.log(require('$CONFIG_FILE').orgAlias || '');
-  } catch(e) {
-    console.error('❌ Erro ao ler orgAlias do JSON:', e.message);
+    const cfg = require('$CONFIG_FILE');
+    if (!cfg.orgAlias) throw new Error('orgAlias ausente.');
+    console.log(cfg.orgAlias);
+  } catch (e) {
+    console.error('❌ Erro ao ler orgAlias:', e.message);
     process.exit(1);
   }
 ")
-
-if [[ -z "$ORG_ALIAS" ]]; then
-  echo "❌ Alias da org não encontrado no JSON."
-  exit 1
-fi
 
 echo "📤 Usando alias da org: $ORG_ALIAS"
 echo ""
@@ -33,7 +33,7 @@ COMPONENTES=$(node -e "
     const cfg = require('$CONFIG_FILE');
     if (!Array.isArray(cfg.componentes)) throw new Error('Campo \"componentes\" ausente ou inválido.');
     console.log(cfg.componentes.map(c => JSON.stringify(c)).join('||'));
-  } catch(e) {
+  } catch (e) {
     console.error('❌ Erro ao processar JSON:', e.message);
     process.exit(1);
   }
@@ -42,44 +42,50 @@ COMPONENTES=$(node -e "
 IFS='||' read -ra COMPONENTES_ARRAY <<< "$COMPONENTES"
 
 for compJson in "${COMPONENTES_ARRAY[@]}"; do
-  tipo=$(node -e "console.log(JSON.parse('$compJson').tipoComponente)")
+  tipo=$(node -e "console.log(JSON.parse(process.argv[1]).tipoComponente)" "$compJson")
   filtros=$(node -e "
-    const comp = JSON.parse('$compJson');
-    if (!comp.filtros || comp.filtros.length === 0) {
+    try {
+      const comp = JSON.parse(process.argv[1]);
+      const f = comp.filtros || [];
+      console.log(f.join('|'));
+    } catch (e) {
       console.log('');
-    } else {
-      console.log(comp.filtros.join('|'));
     }
-  ")
+  " "$compJson")
 
   echo "🔹 Processando tipo de componente: $tipo"
   echo "🔍 Filtros aplicados: ${filtros:-<nenhum>}"
-
-  # Executa o sf org list metadata-type
   echo "⏳ Executando: sf org list metadata-type $tipo"
-  json_result=$(sf org list metadata-type "$tipo" --target-org "$ORG_ALIAS" --json 2>/dev/null)
 
-  # Verifica se veio algo
-  if [[ -z "$json_result" || "$json_result" == *"error"* ]]; then
-    echo "❌ Erro ao consultar metadados do tipo $tipo. Pulando..."
+  # Executa e captura saída
+  json_result=$(sf org list metadata-type "$tipo" --target-org "$ORG_ALIAS" --json 2>&1)
+
+  # Verifica se retorno contém JSON válido
+  if ! echo "$json_result" | grep -q '"result"'; then
+    echo "❌ Erro: saída inesperada de '$tipo'. Verifique permissões, alias ou plugin."
+    echo "$json_result" | head -n 5
+    echo "--------------------------------------------"
     continue
   fi
 
+  # Extrai os fullNames de metadados
   fullnames=$(echo "$json_result" | node -e "
-    let input = ''; process.stdin.on('data', d => input += d);
+    let input = '';
+    process.stdin.on('data', d => input += d);
     process.stdin.on('end', () => {
       try {
         const j = JSON.parse(input);
         const nomes = j.result?.metadataObjects?.map(x => x.fullName) || [];
         console.log(nomes.join('\n'));
       } catch (e) {
-        console.error('❌ Erro ao processar JSON retornado do sf:', e.message);
+        console.error('❌ Erro ao processar JSON:', e.message);
       }
     });
   ")
 
-  # Salva com ou sem filtro
-  arquivo_saida="${tipo,,}_${DATAHORA}.csv"
+  # Define nome do arquivo final
+  arquivo_saida="$PASTA_SAIDA/Extracao_${tipo,,}_${DATAHORA}.csv"
+
   if [[ -n "$filtros" ]]; then
     echo "$fullnames" | grep -E "$filtros" | sort > "$arquivo_saida"
   else
@@ -91,4 +97,4 @@ for compJson in "${COMPONENTES_ARRAY[@]}"; do
 done
 
 echo ""
-echo "🏁 Finalizado! Todos os metadados exportados com sucesso."
+echo "🏁 Finalizado! Todos os metadados exportados com sucesso para a pasta $PASTA_SAIDA."
