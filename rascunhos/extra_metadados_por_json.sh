@@ -1,39 +1,51 @@
 #!/bin/bash
 
-JSON_CONFIG="$1"
-ORG_ALIAS="$2"
+CONFIG_FILE="./config_metadata.json"
+DATAHORA=$(date +"%Y%m%d_%H%M%S")
 
-if [[ -z "$JSON_CONFIG" || -z "$ORG_ALIAS" ]]; then
-  echo "❗ Uso: ./exportar_metadados_por_json.sh caminho/arquivo.json nomeDaOrg"
+if [[ ! -f "$CONFIG_FILE" ]]; then
+  echo "❌ Arquivo $CONFIG_FILE não encontrado!"
   exit 1
 fi
 
-DATAHORA=$(date +"%Y%m%d_%H%M%S")
+# Lê o alias da org do JSON via Node
+ORG_ALIAS=$(node -e "console.log(require('$CONFIG_FILE').orgAlias)")
 
-# Itera sobre cada tipo de componente definido no JSON
-jq -c '.[]' "$JSON_CONFIG" | while read -r componente; do
-  TIPO=$(echo "$componente" | jq -r '.tipoComponente')
-  ARQUIVO_SAIDA="${TIPO,,}_${DATAHORA}.csv"
+# Lê os componentes do JSON via Node, um por um
+COMPONENTES=$(node -e "
+  const cfg = require('$CONFIG_FILE');
+  console.log(cfg.componentes.map(c => JSON.stringify(c)).join('||'));
+")
 
-  echo "📦 Exportando: $TIPO..."
+IFS='||' read -ra COMPONENTES_ARRAY <<< "$COMPONENTES"
 
-  # Executa comando base
-  sf org list metadata-type "$TIPO" --target-org "$ORG_ALIAS" --json \
-    | jq -r '.result.metadataObjects[].fullName' > temp_result.txt
+for compJson in "${COMPONENTES_ARRAY[@]}"; do
+  # Lê tipoComponente e filtros
+  tipo=$(node -e "console.log(JSON.parse('$compJson').tipoComponente)")
+  filtros=$(node -e "
+    const f = JSON.parse('$compJson').filtros;
+    if (!f) return;
+    console.log(f.join('||'))
+  ")
 
-  # Aplica filtros, se existirem
-  FILTERS=$(echo "$componente" | jq -r '.filtros[]?')
-  if [[ -n "$FILTERS" ]]; then
-    > "$ARQUIVO_SAIDA"
-    for filtro in $FILTERS; do
-      grep "$filtro" temp_result.txt >> "$ARQUIVO_SAIDA"
-    done
-    sort -u "$ARQUIVO_SAIDA" -o "$ARQUIVO_SAIDA"
+  echo ""
+  echo "📦 Exportando: $tipo..."
+
+  # Executa o comando base e pega os fullNames
+  json_result=$(sf org list metadata-type "$tipo" --target-org "$ORG_ALIAS" --json)
+  fullnames=$(echo "$json_result" | node -e "let input = ''; process.stdin.on('data', d => input += d); process.stdin.on('end', () => {
+    const j = JSON.parse(input);
+    const nomes = j.result?.metadataObjects?.map(x => x.fullName) || [];
+    console.log(nomes.join('\n'));
+  })")
+
+  # Aplica filtro (se houver)
+  arquivo_saida="${tipo,,}_${DATAHORA}.csv"
+  if [[ -n "$filtros" ]]; then
+    echo "$fullnames" | grep -E "$(echo "$filtros" | sed 's/||/|/g')" | sort > "$arquivo_saida"
   else
-    mv temp_result.txt "$ARQUIVO_SAIDA"
+    echo "$fullnames" | sort > "$arquivo_saida"
   fi
 
-  echo "✅ Arquivo gerado: $ARQUIVO_SAIDA"
+  echo "✅ Arquivo gerado: $arquivo_saida"
 done
-
-rm -f temp_result.txt
