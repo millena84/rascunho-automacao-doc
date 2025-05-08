@@ -57,25 +57,25 @@ for compJson in "${COMPONENTES_ARRAY[@]}"; do
   echo "🔍 Filtros aplicados: ${filtros:-<nenhum>}"
   echo "⏳ Executando: sf org list metadata --metadata-type $tipo"
 
-  # Executa comando correto (listagem dos metadados do tipo)
+  # Executa comando principal
   json_result=$(sf org list metadata --metadata-type "$tipo" --target-org "$ORG_ALIAS" --json 2>&1)
 
-  # Verifica se retorno contém JSON
   if ! echo "$json_result" | grep -q '"result"'; then
-    echo "❌ Erro: saída inesperada para '$tipo'."
+    echo "❌ Saída inesperada para '$tipo'."
     echo "$json_result" | head -n 5
     echo "--------------------------------------------"
     continue
   fi
 
-  # Extrai os fullNames
+  # Processa JSON com segurança
   fullnames=$(echo "$json_result" | node -e "
     let input = '';
     process.stdin.on('data', d => input += d);
     process.stdin.on('end', () => {
       try {
         const j = JSON.parse(input);
-        const nomes = j.result?.map(x => x.fullName) || [];
+        if (!Array.isArray(j.result) || j.result.length === 0) return;
+        const nomes = j.result.map(x => x.fullName || '').filter(n => n);
         console.log(nomes.join('\n'));
       } catch (e) {
         console.error('❌ Erro ao processar JSON:', e.message);
@@ -83,19 +83,21 @@ for compJson in "${COMPONENTES_ARRAY[@]}"; do
     });
   ")
 
-  # Define nome do arquivo
   arquivo_saida="$PASTA_SAIDA/Extracao_${tipo,,}_${DATAHORA}.csv"
 
-  # Aplica filtro se existir
   if [[ -n "$filtros" ]]; then
     echo "$fullnames" | grep -E "$filtros" | sort > "$arquivo_saida"
   else
     echo "$fullnames" | sort > "$arquivo_saida"
   fi
 
-  echo "✅ Arquivo salvo: $arquivo_saida"
+  if [[ -s "$arquivo_saida" ]]; then
+    echo "✅ Arquivo salvo: $arquivo_saida"
+  else
+    echo "⚠️  Nenhum dado retornado para $tipo. Arquivo vazio: $arquivo_saida"
+  fi
   echo "--------------------------------------------"
 done
 
 echo ""
-echo "🏁 Finalizado! Todos os metadados exportados com sucesso para a pasta $PASTA_SAIDA."
+echo "🏁 Finalizado! Todos os metadados exportados com sucesso para: $PASTA_SAIDA"
