@@ -16,8 +16,13 @@ semelhante() {
   [[ "$a" == *"$b"* || "$b" == *"$a"* ]]
 }
 
-# Processa cada linha do CSV de XMLs
+total=$(tail -n +2 "$CSV_XML" | wc -l)
+linha_atual=0
+
 tail -n +2 "$CSV_XML" | while IFS="," read -r ARQUIVO LABEL CAN_XML FORM_XML; do
+  ((linha_atual++))
+  echo "📄 [$linha_atual/$total] Verificando: $ARQUIVO | $CAN_XML / $FORM_XML"
+
   encontrou=0
 
   while IFS="," read -r CAN_TABELA FORM_TABELA; do
