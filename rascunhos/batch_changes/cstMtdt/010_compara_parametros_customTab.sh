@@ -19,6 +19,9 @@ semelhante() {
 linha_atual=0
 total=$(tail -n +2 "$CSV_XML" | wc -l)
 
+# Carrega toda a tabela de referência em memória
+mapfile -t tabela_ref < <(sed '1d' "$CSV_TABELA")
+
 # Loop externo: lê cada linha do XML
 while IFS="," read -r ARQUIVO LABEL CAN_XML FORM_XML; do
   ((linha_atual++))
@@ -27,8 +30,9 @@ while IFS="," read -r ARQUIVO LABEL CAN_XML FORM_XML; do
   # Pula se linha estiver vazia
   [[ -z "$ARQUIVO" || -z "$FORM_XML" ]] && continue
 
-  # Loop interno: lê a tabela de referência
-  sed '1d' "$CSV_TABELA" | while IFS="," read -r CAN_TABELA FORM_TABELA; do
+  for linha_ref in "${tabela_ref[@]}"; do
+    IFS="," read -r CAN_TABELA FORM_TABELA <<< "$linha_ref"
+
     if semelhante "$FORM_XML" "$FORM_TABELA"; then
       echo ""
       echo "🔎 Possível correspondência encontrada (formato apenas):"
@@ -39,7 +43,7 @@ while IFS="," read -r ARQUIVO LABEL CAN_XML FORM_XML; do
 
       while true; do
         echo -n "❓ Deseja gravar esse registro como novo? (s/n): "
-        read -r resposta
+        read -r resposta < /dev/tty
         if [[ "$resposta" == "s" || "$resposta" == "S" ]]; then
           echo "$ARQUIVO,$CAN_TABELA,$FORM_TABELA" >> "$CSV_SAIDA"
           echo "✅ Registro salvo. Execute: ./cria_xml.sh \"$ARQUIVO\" \"$LABEL\" \"$CAN_TABELA\" \"$FORM_TABELA\""
