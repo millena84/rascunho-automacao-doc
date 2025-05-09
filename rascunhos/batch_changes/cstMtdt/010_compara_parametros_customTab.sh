@@ -1,15 +1,13 @@
 #!/bin/bash
 
-CSV_XML="./_metadados/lista_com_labels.csv"
-CSV_TABELA="./_metadados/VincParamCustom-CanalFormato.csv"
+CSV_XML="./_metadados/011_lista_com_labels.csv"
+CSV_TABELA="./_metadados/011_VincParamCustom-CanalFormato.csv"
 CSV_SAIDA="./saida_xml/listaCustomAlteracao.csv"
 DIR_SAIDA="saida_xml"
-
 
 mkdir -p "$DIR_SAIDA"
 
 echo "🔍 Comparando CSV dos XMLs com CSV da tabela de referência..."
-# echo "Arquivo|Label|CAN_XML|FORM_XML|CAN_TABELA|FORM_TABELA|Novo" > "$CSV_SAIDA"
 echo "Arquivo,CAN_TABELA,FORM_TABELA" > "$CSV_SAIDA"
 
 semelhante() {
@@ -18,13 +16,11 @@ semelhante() {
   [[ "$a" == *"$b"* || "$b" == *"$a"* ]]
 }
 
-# Lê o CSV linha a linha ignorando o cabeçalho
-exec 3< <(tail -n +2 "$CSV_XML")
-while IFS="," read -r ARQUIVO LABEL CAN_XML FORM_XML <&3; do
+# Processa cada linha do CSV de XMLs
+tail -n +2 "$CSV_XML" | while IFS="," read -r ARQUIVO LABEL CAN_XML FORM_XML; do
   encontrou=0
 
-  exec 4< <(tail -n +2 "$CSV_TABELA")
-  while IFS="," read -r CAN_TABELA FORM_TABELA <&4; do
+  while IFS="," read -r CAN_TABELA FORM_TABELA; do
     if [[ "$CAN_XML" == "$CAN_TABELA" && "$FORM_XML" == "$FORM_TABELA" ]]; then
       encontrou=1
       break
@@ -45,7 +41,6 @@ while IFS="," read -r ARQUIVO LABEL CAN_XML FORM_XML <&3; do
         echo -n "❓ Deseja gravar esse registro como novo? (s/n): "
         read -r resposta
         if [[ "$resposta" == "s" || "$resposta" == "S" ]]; then
-          # echo "$ARQUIVO|$LABEL|$CAN_XML|$FORM_XML|$CAN_TABELA|$FORM_TABELA|sim" >> "$CSV_SAIDA"
           echo "$ARQUIVO,$CAN_TABELA,$FORM_TABELA" >> "$CSV_SAIDA"
           echo "✅ Registro salvo. Execute: ./cria_xml.sh \"$ARQUIVO\" \"$LABEL\" \"$CAN_TABELA\" \"$FORM_TABELA\""
           break
@@ -57,10 +52,8 @@ while IFS="," read -r ARQUIVO LABEL CAN_XML FORM_XML <&3; do
         fi
       done
     fi
-  done
-  exec 4<&-
+  done < <(tail -n +2 "$CSV_TABELA")
 done
-exec 3<&-
 
 echo ""
 echo "✅ Comparação finalizada. Resultados salvos em: $CSV_SAIDA"
