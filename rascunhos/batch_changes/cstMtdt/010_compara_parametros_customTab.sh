@@ -3,11 +3,11 @@
 CSV_XML="./_metadados/011_lista_com_labels.csv"
 CSV_TABELA="./_metadados/011_VincParamCustom-CanalFormato.csv"
 CSV_SAIDA="./saida_xml/listaCustomAlteracao.csv"
-DIR_SAIDA="saida_xml"
+DIR_SAIDA="./saida_xml"
 
 mkdir -p "$DIR_SAIDA"
 
-echo "🔍 Comparando CSV dos XMLs com CSV da tabela de referência..."
+echo "🔍 Comparando apenas o FORMATO (CANAL assumido como correto)..."
 echo "Arquivo,CAN_TABELA,FORM_TABELA" > "$CSV_SAIDA"
 
 semelhante() {
@@ -16,29 +16,24 @@ semelhante() {
   [[ "$a" == *"$b"* || "$b" == *"$a"* ]]
 }
 
-total=$(tail -n +2 "$CSV_XML" | wc -l)
 linha_atual=0
+total=$(tail -n +2 "$CSV_XML" | wc -l)
 
-tail -n +2 "$CSV_XML" | while IFS="," read -r ARQUIVO LABEL CAN_XML FORM_XML; do
+# Loop externo: lê cada linha do XML
+while IFS="," read -r ARQUIVO LABEL CAN_XML FORM_XML; do
   ((linha_atual++))
-  echo "📄 [$linha_atual/$total] Verificando: $ARQUIVO | $CAN_XML / $FORM_XML"
+  echo "📄 [$linha_atual/$total] Verificando: $ARQUIVO | FORM_XML: $FORM_XML"
 
-  encontrou=0
+  # Pula se linha estiver vazia
+  [[ -z "$ARQUIVO" || -z "$FORM_XML" ]] && continue
 
-  while IFS="," read -r CAN_TABELA FORM_TABELA; do
-    if [[ "$CAN_XML" == "$CAN_TABELA" && "$FORM_XML" == "$FORM_TABELA" ]]; then
-      encontrou=1
-      break
-    fi
-
-    if semelhante "$CAN_XML" "$CAN_TABELA" && semelhante "$FORM_XML" "$FORM_TABELA"; then
+  # Loop interno: lê a tabela de referência
+  sed '1d' "$CSV_TABELA" | while IFS="," read -r CAN_TABELA FORM_TABELA; do
+    if semelhante "$FORM_XML" "$FORM_TABELA"; then
       echo ""
-      echo "🔎 Possível correspondência encontrada:"
+      echo "🔎 Possível correspondência encontrada (formato apenas):"
       echo "Arquivo:        $ARQUIVO"
-      echo "Label:          $LABEL"
-      echo "CAN_XML:        $CAN_XML"
       echo "FORM_XML:       $FORM_XML"
-      echo "CAN_TABELA:     $CAN_TABELA"
       echo "FORM_TABELA:    $FORM_TABELA"
       echo ""
 
@@ -57,8 +52,9 @@ tail -n +2 "$CSV_XML" | while IFS="," read -r ARQUIVO LABEL CAN_XML FORM_XML; do
         fi
       done
     fi
-  done < <(tail -n +2 "$CSV_TABELA")
-done
+  done
+
+done < <(tail -n +2 "$CSV_XML")
 
 echo ""
 echo "✅ Comparação finalizada. Resultados salvos em: $CSV_SAIDA"
