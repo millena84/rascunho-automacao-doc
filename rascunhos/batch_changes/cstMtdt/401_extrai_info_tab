@@ -1,0 +1,56 @@
+#!/bin/bash
+# Script de extração de vínculos canal x formato com CSV limpo e UTF-8 BOM
+
+set -e
+
+CONFIG_FILE="./11_extract_org_metadata.json"
+EXPORT_DIR="./1_metadados"
+RAW_FILE="$EXPORT_DIR/saidaTerminal.txt"
+OUTPUT_CSV="$EXPORT_DIR/_VincParCustom-CanalFormato.csv"
+
+function info    { echo -e "\033[1;34m[INFO]\033[0m $1"; }
+function success { echo -e "\033[1;32m[SUCCESS]\033[0m $1"; }
+function error   { echo -e "\033[1;31m[ERROR]\033[0m $1"; }
+
+# Validação e início
+info "🚀 INICIANDO PROCESSO EXTRACAO (CONSULTA) TABELA REFERENCIA"
+info "🕓 INICIO EXECUCAO: $(date '+%d/%m/%Y - %H:%M:%S')"
+
+if [[ ! -f "$CONFIG_FILE" ]]; then
+  error "❌ Arquivo $CONFIG_FILE não encontrado!"
+  exit 1
+fi
+
+# Extrai alias da org
+ORG_ALIAS_CONSULTA=$(node -e '
+  try {
+    const cfg = require("'"$CONFIG_FILE"'");
+    if (!cfg.orgAliasRetrieve) throw new Error("orgAliasRetrieve ausente.");
+    console.log(cfg.orgAliasRetrieve);
+  } catch (e) {
+    console.error("❌ Erro ao ler orgAliasRetrieve:", e.message);
+    process.exit(1);
+  }
+')
+
+info "🔎 AMBIENTE CONSULTADO (Org Alias): $ORG_ALIAS_CONSULTA"
+mkdir -p "$EXPORT_DIR"
+
+# Executa a query com sfdx
+info "📦 Exportando Vínculos relacionados à parametrização do CustomMetadata ..."
+sfdx force:data:soql:query \
+  --query "QUERYAQUI" \
+  --target-org "$ORG_ALIAS_CONSULTA" > "$RAW_FILE"
+
+info "✅ Dados exportados com sucesso em: $RAW_FILE"
+info "🔁 Convertendo resultado tabulado em CSV limpo..."
+
+# Grava CSV com BOM e cabeçalho
+printf '\xEF\xBB\xBFCANAL;FORMATO\n' > "$OUTPUT_CSV"
+
+# Processa resultado e limpa com awk
+grep -vE '^\+|^WM2_Canal_ID__r.Name' "$RAW_FILE" |
+awk -F '|' '{ gsub(/^[ \t]+|[ \t]+$/, "", $2); gsub(/^[ \t]+|[ \t]+$/, "", $3); print $2 ";" $3 }' >> "$OUTPUT_CSV"
+
+success "✅ Dados formatados exportados para: $OUTPUT_CSV"
+success "⚠️  Lembre-se de revisar CANAL x FORMATO para marcar os que precisam de Custom Metadata."
