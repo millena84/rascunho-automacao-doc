@@ -13,44 +13,45 @@ def path_gitbash_para_windows(caminho):
             return os.path.abspath(os.path.normpath(f"{drive}:/{resto}"))
     return os.path.abspath(os.path.normpath(caminho))
 
-# === Carrega parâmetros do JSON ===
+# === Parâmetros e leitura do JSON ===
 ARQ_EXECUCAO = "11_extract_org_metadata.json"
 
 with open(ARQ_EXECUCAO, "r", encoding="utf-8") as f:
     config = json.load(f)
 
-# Parâmetros extraídos e convertidos
 origem_base = path_gitbash_para_windows(config.get("diretorioProjetosSF", ""))
 destino_base = path_gitbash_para_windows(config.get("diretorioAlteracaoCustomMtdLote", ""))
 filtro_nome = config.get("filtroNomeArquivo", "").strip()
 dir_componente = config.get("diretorioComponente", "").strip()
 
 if not filtro_nome or not dir_componente:
-    print("❌ Faltando 'filtroNomeArquivo' ou 'diretorioComponente' no JSON.")
+    print("❌ Campos obrigatórios ausentes: 'filtroNomeArquivo' ou 'diretorioComponente'")
     exit(1)
 
-# Remove barras iniciais de segurança e monta caminho final da origem
+# Garante que 'dir_componente' não vai sobrescrever o caminho base
 dir_componente = dir_componente.lstrip("/\\")
 pasta_origem = os.path.normpath(os.path.join(origem_base, dir_componente))
 
-# Pasta de destino final (ex: bckp_preRet/entrada_xml_CamposCanalFormato_<timestamp>)
-timestamp = datetime.now().strftime("%Y%m%d-%H-%M")
-pasta_destino = os.path.join(destino_base, "bckp_preRet", f"entrada_xml_{filtro_nome}_{timestamp}")
+# Timestamp formatado de forma segura para nome de pasta
+timestamp = datetime.now().strftime("%Y%m%d-%H%M%S")
+nome_seguro = f"entrada_xml_{filtro_nome}_{timestamp}".replace(":", "_").replace("/", "_").replace("\\", "_").replace(" ", "_")
+pasta_destino = os.path.join(destino_base, "bckp_preRet", nome_seguro)
 os.makedirs(pasta_destino, exist_ok=True)
 
-# Logs de debug
+# Logs iniciais
 print()
-print(f"🔍 Buscando arquivos com '{filtro_nome}'")
-print(f"📂 Origem : {pasta_origem}")
-print(f"📁 Destino: {pasta_destino}")
+print(f"🔎 Procurando arquivos com '{filtro_nome}'")
+print(f"📂 Origem  : {pasta_origem}")
+print(f"📁 Destino : {pasta_destino}")
 print()
 
-# Verificação e cópia
-copiados = 0
+# Verifica origem
 if not os.path.isdir(pasta_origem):
     print(f"❌ Pasta de origem não encontrada: {pasta_origem}")
     exit(1)
 
+# Cópia dos arquivos que batem com o filtro
+copiados = 0
 for root, _, files in os.walk(pasta_origem):
     for file in files:
         if filtro_nome in file:
@@ -69,4 +70,4 @@ if copiados == 0:
     print(f"⚠️ Nenhum arquivo contendo '{filtro_nome}' foi encontrado.")
 else:
     print(f"🎉 {copiados} arquivo(s) copiado(s) com sucesso.")
-    print(f"📦 Arquivos salvos em: {pasta_destino}")
+    print(f"📦 Conteúdo salvo em: {pasta_destino}")
