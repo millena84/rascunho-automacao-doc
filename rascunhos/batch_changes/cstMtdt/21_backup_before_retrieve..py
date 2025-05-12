@@ -4,7 +4,7 @@ import json
 from datetime import datetime
 
 # === Função robusta para converter caminhos estilo Git Bash para Windows ===
-def path_gitbash_para_windows(caminho):
+def path_gitbash_para_windows2(caminho):
     """
     Converte caminhos como /c/Users/... para C:/Users/... no Windows.
     Funciona mesmo com caminhos mistos e normaliza para o Python.
@@ -16,6 +16,23 @@ def path_gitbash_para_windows(caminho):
             resto = partes[1]
             return os.path.normpath(f"{drive}:/{resto}")
     return os.path.normpath(caminho)
+
+def path_gitbash_para_windows(caminho):
+    if caminho.startswith("/"):
+        partes = caminho.strip("/").split("/", 1)
+        if len(partes) == 2 and len(partes[0]) == 1:
+            drive = partes[0].upper()
+            resto = partes[1]
+            return os.path.abspath(os.path.normpath(f"{drive}:/{resto}"))
+    return os.path.abspath(os.path.normpath(caminho))
+
+
+print(f"DEBUG | Caminho JSON origem (raw)   : {config_exec.get('diretorioProjetosSF')}")
+print(f"DEBUG | Caminho convertido origem   : {origem_base}")
+print(f"DEBUG | Existe origem?              : {os.path.isdir(origem_base)}")
+print(f"DEBUG | Caminho destino convertido  : {destino_base}")
+print(f"DEBUG | Caminho destino final       : {backup_dir}")
+
 
 # === Arquivos de configuração ===
 ARQ_EXECUCAO = "11_extract_org_metadata.json"
