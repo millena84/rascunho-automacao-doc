@@ -3,45 +3,40 @@ import shutil
 import json
 from datetime import datetime
 
-# === Função para converter caminho do Git Bash para Windows ===
+# === Função robusta para converter caminhos estilo Git Bash para Windows ===
 def path_gitbash_para_windows(caminho):
     """
-    Converte caminhos como /c/Users/... em C:/Users/... de forma segura
+    Converte caminhos como /c/Users/... para C:/Users/... no Windows.
+    Funciona mesmo com caminhos mistos e normaliza para o Python.
     """
-    if caminho.startswith("/") and len(caminho) > 2 and caminho[2] == '/':
-        drive = caminho[1]
-        resto = caminho[2:]
-        return os.path.normpath(f"{drive.upper()}:/{resto}")
+    if caminho.startswith("/"):
+        partes = caminho.strip("/").split("/", 1)
+        if len(partes) == 2 and len(partes[0]) == 1:
+            drive = partes[0].upper()
+            resto = partes[1]
+            return os.path.normpath(f"{drive}:/{resto}")
     return os.path.normpath(caminho)
 
-# === Arquivos de entrada ===
+# === Arquivos de configuração ===
 ARQ_EXECUCAO = "11_extract_org_metadata.json"
 ARQ_MAPA_PASTAS = "21_mapa_pastas_componentes.json"
 
-# === Carrega o JSON de configuração ===
-if not os.path.isfile(ARQ_EXECUCAO):
-    print(f"❌ Arquivo não encontrado: {ARQ_EXECUCAO}")
-    exit(1)
-
+# === Carrega o JSON de execução ===
 with open(ARQ_EXECUCAO, "r", encoding="utf-8") as f:
     config_exec = json.load(f)
 
-# Converte caminhos mesmo se vierem no formato /c/...
 origem_base = path_gitbash_para_windows(config_exec.get("diretorioProjetosSF", ""))
 destino_base = path_gitbash_para_windows(config_exec.get("diretorioAlteracaoCustomMtdLote", ""))
 
-if not origem_base or not destino_base:
-    print("❌ Caminhos 'diretorioProjetosSF' ou 'diretorioAlteracaoCustomMtdLote' ausentes ou inválidos.")
+if not os.path.isdir(origem_base):
+    print(f"❌ Pasta de origem não encontrada: {origem_base}")
+    print(f"❌ FIM EXECUCAO: {datetime.now().strftime('%Y%m%d-%H-%M')}")
     exit(1)
 
 backup_dir = os.path.join(destino_base, "bckp_preRet")
 os.makedirs(backup_dir, exist_ok=True)
 
-# === Carrega o JSON de mapeamento ===
-if not os.path.isfile(ARQ_MAPA_PASTAS):
-    print(f"❌ Arquivo não encontrado: {ARQ_MAPA_PASTAS}")
-    exit(1)
-
+# === Carrega mapeamento de pastas ===
 with open(ARQ_MAPA_PASTAS, "r", encoding="utf-8") as f:
     mapa_pastas = json.load(f)
 
@@ -49,11 +44,9 @@ tipos_utilizados = [c.get("tipoComponente") for c in config_exec.get("componente
 
 # === Início do backup ===
 timestamp = datetime.now().strftime("%Y%m%d-%H-%M")
-print()
-print(f"🚀 INÍCIO BACKUP: {timestamp}")
-print(f"📂 Origem base : {origem_base}")
-print(f"📁 Backup para : {backup_dir}")
-print()
+print(f"\n🧃 INICIO PROCESSO BACKUP     {timestamp}")
+print(f"📂 Origem: {origem_base}")
+print(f"📁 Backup: {backup_dir}\n")
 
 copiados = 0
 
@@ -88,7 +81,7 @@ print()
 if copiados == 0:
     print("⚠️ Nenhum arquivo foi copiado.")
 else:
-    print(f"🎉 Backup finalizado. Total de arquivos copiados: {copiados}")
-    print(f"📦 Backup salvo em: {backup_dir}")
+    print(f"🎉 Backup finalizado! Total de arquivos copiados: {copiados}")
+    print(f"📦 Conteúdo salvo em: {backup_dir}")
 
-print(f"🏁 FIM: {datetime.now().strftime('%Y%m%d-%H-%M')}")
+print(f"✅ FIM EXECUCAO: {datetime.now().strftime('%Y%m%d-%H-%M')}")
