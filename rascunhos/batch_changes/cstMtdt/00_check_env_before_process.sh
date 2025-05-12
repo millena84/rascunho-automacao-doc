@@ -24,28 +24,28 @@ fi
 # Valida existência do sfdx-project.json
 if [ ! -f "$dirArqSfdx/sfdx-project.json" ]; then
     echo "❌ Arquivo sfdx-project.json não encontrado em $dirArqSfdx"
+    echo "❌ Certifique-se de que existe projeto criado no VSCode para poder executar todo processo."
+    echo "❌ Será necessário fazer o retrieve (de org produção) E deploy (para sandbox de desenvolvimento)."
     exit 1
 fi
 
-# Verifica se o diretório de projetos existe
-if [ ! -d "$dirProjetosSF" ]; then
-    echo "❌ Diretório $dirProjetosSF não encontrado."
+echo "🔍 Verificando se aliases SFDX estão configurados (com 'sf org list --all --json')..."
+
+# Verifica se o alias do projeto está presente
+if ! sf org list --all --json | grep -q "\"alias\": \"$orgAliasProjeto\""; then
+    echo "❌ Alias '$orgAliasProjeto' não está configurado nesta máquina."
+    echo "   → Verifique se você fez login com esse alias via 'sf org login web --alias $orgAliasProjeto'"
     exit 1
 fi
 
-# Valida se aliases existem via sfdx
-echo "Verificando se aliases SFDX estão configurados..."
-sfdx aliases:list | grep -q "$orgAliasProjeto"
-if [ $? -ne 0 ]; then
-    echo "❌ Alias $orgAliasProjeto não configurado."
+# Verifica se o alias da org de retrieve está presente
+if ! sf org list --all --json | grep -q "\"alias\": \"$orgAliasRetrieve\""; then
+    echo "❌ Alias '$orgAliasRetrieve' não está configurado nesta máquina."
+    echo "   → Verifique se você fez login com esse alias via 'sf org login web --alias $orgAliasRetrieve'"
     exit 1
 fi
 
-sfdx aliases:list | grep -q "$orgAliasRetrieve"
-if [ $? -ne 0 ]; then
-    echo "❌ Alias $orgAliasRetrieve não configurado."
-    exit 1
-fi
+echo "✅ Aliases verificados com sucesso!"
 
 # Confirma com o usuário se deseja continuar
 echo "✅ Tudo pronto. Deseja continuar com a execução? (s/n)"
