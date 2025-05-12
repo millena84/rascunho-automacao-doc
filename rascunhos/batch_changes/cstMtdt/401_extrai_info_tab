@@ -1,59 +1,59 @@
 #!/bin/bash
-# Script para extrair canal e formato e salvar em CSV com BOM e CRLF
-
 set -e
 
+# ========================================================
+# Script de Exportação de Dados Salesforce para CSV
+# - Exporta Accounts e Contacts em arquivos separados no formato .csv
+# - Autor: millena84
+# ========================================================
+
 CONFIG_FILE="./11_extract_org_metadata.json"
-EXPORT_DIR="./1_metadados"
-RAW_FILE="$EXPORT_DIR/saidaTerminal.txt"
-OUTPUT_CSV="$EXPORT_DIR/_VincParCustom-CanalFormato.csv"
 
-function info    { echo -e "\033[1;34m[INFO]\033[0m $1"; }
-function success { echo -e "\033[1;32m[SUCCESS]\033[0m $1"; }
-function error   { echo -e "\033[1;31m[ERROR]\033[0m $1"; }
-
-info "🚀 INICIANDO PROCESSO EXTRACAO (CONSULTA) TABELA REFERENCIA"
-info "🕓 INICIO EXECUCAO: $(date '+%d/%m/%Y - %H:%M:%S')"
-
+# 🧪 Verifica se o JSON existe
 if [[ ! -f "$CONFIG_FILE" ]]; then
-  error "❌ Arquivo $CONFIG_FILE não encontrado!"
+  echo "❌ Arquivo $CONFIG_FILE não encontrado!"
   exit 1
 fi
 
-ORG_ALIAS_CONSULTA=$(node -e '
+# * Extrai alias da org referencia para o filtro
+ORG_ALIAS_CONSULTA=$(node -e "
   try {
-    const cfg = require("'"$CONFIG_FILE"'");
-    if (!cfg.orgAliasRetrieve) throw new Error("orgAliasRetrieve ausente.");
+    const cfg = require('$CONFIG_FILE');
+    if (!cfg.orgAliasRetrieve) throw new Error('orgAliasRetrieve ausente.');
     console.log(cfg.orgAliasRetrieve);
   } catch (e) {
-    console.error("❌ Erro ao ler orgAliasRetrieve:", e.message);
+    console.error('❌ Erro ao ler orgAliasRetrieve:', e.message);
     process.exit(1);
   }
-')
+")
 
-info "🔎 AMBIENTE CONSULTADO (Org Alias): $ORG_ALIAS_CONSULTA"
+EXPORT_DIR="./1_metadados"
+RAW_FILE="$EXPORT_DIR/_saidaTerminal.txt"
+OUTPUT_CSV="$EXPORT_DIR/14_VincParamCustom-CanalFormato.csv"
+
+# Cria diretório se não existir
 mkdir -p "$EXPORT_DIR"
 
-# Executa a query (sem alterações)
+echo "Alias da org de consulta: $ORG_ALIAS_CONSULTA"
+echo "Arquivo final com resultado: $OUTPUT_CSV"
+
+# * Exporta Contacts associados
+echo "🔄 Exportando Vínculos relacionados à parametrização do CustomMetadata ..."
+# sf data query \
+#   --query "QUERY" \
+#   --target-org "$ORG_ALIAS_CONSULTA" >> "$RAW_FILE"
 sf data query \
-  --query "QUERIE" \
-  --target-org "$ORG_ALIAS_CONSULTA" > "$RAW_FILE"
+  --query "QUERY"\
+  --target-org "$ORG_ALIAS_CONSULTA" >> "$RAW_FILE"
 
-info "✅ Dados exportados com sucesso em: $RAW_FILE"
-info "🔁 Convertendo resultado tabulado em CSV..."
+echo "✅ Dados exportados com sucesso em: $RAW_FILE"
 
-# Grava cabeçalho com BOM e CRLF
-printf '\xEF\xBB\xBFCANAL;FORMATO\r\n' > "$OUTPUT_CSV"
-
-# Converte com awk confiável (elimina linhas inválidas e espaços)
-tail -n +3 "$RAW_FILE" | grep -vE '^\+|^WM2_Canal_ID__r.Name' |
-awk -F '|' 'NF >= 3 {
-  canal=$2; formato=$3;
-  gsub(/^[ \t]+|[ \t]+$/, "", canal);
-  gsub(/^[ \t]+|[ \t]+$/, "", formato);
-  if (canal != "" && formato != "") {
-    printf "%s;%s\r\n", canal, formato;
-  }
-}' >> "$OUTPUT_CSV"
-
-success "✅ CSV gerado com sucesso: $OUTPUT_CSV"
+# * Converte resultado tabular para CSV
+echo "🧪 Convertendo resultado tabulado em CSV..."
+{
+  echo "CanalTab, FormatoTab"
+    # | grep -vE '^\+|\| WW2_Canal_ID__r.Name' \
+  grep '|' "$RAW_FILE"\
+    | grep -vE '^\+|\| IUJ_Par_Canal_Contato_Lkp__r.IUJ_Nome__c'\
+    | awk -F '|' '{ sub(/^[ \t]+/, "", $2); sub(/[ \t]+$/, "", $2); sub(/^[ \t]+/, "", $3); sub(/[ \t]+$/, "", $3); print $2 "," $3 }'
+} > "$OUTPUT_CSV"
