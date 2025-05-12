@@ -4,19 +4,6 @@ import json
 from datetime import datetime
 
 # === Função robusta para converter caminhos estilo Git Bash para Windows ===
-def path_gitbash_para_windows2(caminho):
-    """
-    Converte caminhos como /c/Users/... para C:/Users/... no Windows.
-    Funciona mesmo com caminhos mistos e normaliza para o Python.
-    """
-    if caminho.startswith("/"):
-        partes = caminho.strip("/").split("/", 1)
-        if len(partes) == 2 and len(partes[0]) == 1:
-            drive = partes[0].upper()
-            resto = partes[1]
-            return os.path.normpath(f"{drive}:/{resto}")
-    return os.path.normpath(caminho)
-
 def path_gitbash_para_windows(caminho):
     if caminho.startswith("/"):
         partes = caminho.strip("/").split("/", 1)
@@ -26,31 +13,31 @@ def path_gitbash_para_windows(caminho):
             return os.path.abspath(os.path.normpath(f"{drive}:/{resto}"))
     return os.path.abspath(os.path.normpath(caminho))
 
-
-print(f"DEBUG | Caminho JSON origem (raw)   : {config_exec.get('diretorioProjetosSF')}")
-print(f"DEBUG | Caminho convertido origem   : {origem_base}")
-print(f"DEBUG | Existe origem?              : {os.path.isdir(origem_base)}")
-print(f"DEBUG | Caminho destino convertido  : {destino_base}")
-print(f"DEBUG | Caminho destino final       : {backup_dir}")
-
-
 # === Arquivos de configuração ===
 ARQ_EXECUCAO = "11_extract_org_metadata.json"
 ARQ_MAPA_PASTAS = "21_mapa_pastas_componentes.json"
 
-# === Carrega o JSON de execução ===
+# === Carrega JSON de execução ===
 with open(ARQ_EXECUCAO, "r", encoding="utf-8") as f:
     config_exec = json.load(f)
 
+# Converte caminhos
 origem_base = path_gitbash_para_windows(config_exec.get("diretorioProjetosSF", ""))
 destino_base = path_gitbash_para_windows(config_exec.get("diretorioAlteracaoCustomMtdLote", ""))
+backup_dir = os.path.join(destino_base, "bckp_preRet")
 
+# Logs de verificação
+print(f"\n🔍 Caminho origem JSON (raw)     : {config_exec.get('diretorioProjetosSF')}")
+print(f"🔄 Caminho origem convertido      : {origem_base}")
+print(f"🔄 Caminho destino convertido     : {destino_base}")
+print(f"📂 Backup será salvo em           : {backup_dir}\n")
+
+# Valida existência da pasta de origem
 if not os.path.isdir(origem_base):
     print(f"❌ Pasta de origem não encontrada: {origem_base}")
     print(f"❌ FIM EXECUCAO: {datetime.now().strftime('%Y%m%d-%H-%M')}")
     exit(1)
 
-backup_dir = os.path.join(destino_base, "bckp_preRet")
 os.makedirs(backup_dir, exist_ok=True)
 
 # === Carrega mapeamento de pastas ===
@@ -61,9 +48,9 @@ tipos_utilizados = [c.get("tipoComponente") for c in config_exec.get("componente
 
 # === Início do backup ===
 timestamp = datetime.now().strftime("%Y%m%d-%H-%M")
-print(f"\n🧃 INICIO PROCESSO BACKUP     {timestamp}")
-print(f"📂 Origem: {origem_base}")
-print(f"📁 Backup: {backup_dir}\n")
+print(f"🚀 INÍCIO BACKUP: {timestamp}")
+print(f"📁 Origem: {origem_base}")
+print(f"📁 Destino: {backup_dir}\n")
 
 copiados = 0
 
@@ -101,4 +88,4 @@ else:
     print(f"🎉 Backup finalizado! Total de arquivos copiados: {copiados}")
     print(f"📦 Conteúdo salvo em: {backup_dir}")
 
-print(f"✅ FIM EXECUCAO: {datetime.now().strftime('%Y%m%d-%H-%M')}")
+print(f"🏁 FIM EXECUCAO: {datetime.now().strftime('%Y%m%d-%H-%M')}")
