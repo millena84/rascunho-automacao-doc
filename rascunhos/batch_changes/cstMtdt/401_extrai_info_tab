@@ -1,5 +1,5 @@
 #!/bin/bash
-# Script de extração de vínculos canal x formato com CSV limpo e UTF-8 BOM
+# Script para extrair canal e formato e salvar em CSV com BOM e CRLF
 
 set -e
 
@@ -12,7 +12,6 @@ function info    { echo -e "\033[1;34m[INFO]\033[0m $1"; }
 function success { echo -e "\033[1;32m[SUCCESS]\033[0m $1"; }
 function error   { echo -e "\033[1;31m[ERROR]\033[0m $1"; }
 
-# Validação e início
 info "🚀 INICIANDO PROCESSO EXTRACAO (CONSULTA) TABELA REFERENCIA"
 info "🕓 INICIO EXECUCAO: $(date '+%d/%m/%Y - %H:%M:%S')"
 
@@ -21,7 +20,6 @@ if [[ ! -f "$CONFIG_FILE" ]]; then
   exit 1
 fi
 
-# Extrai alias da org
 ORG_ALIAS_CONSULTA=$(node -e '
   try {
     const cfg = require("'"$CONFIG_FILE"'");
@@ -36,21 +34,26 @@ ORG_ALIAS_CONSULTA=$(node -e '
 info "🔎 AMBIENTE CONSULTADO (Org Alias): $ORG_ALIAS_CONSULTA"
 mkdir -p "$EXPORT_DIR"
 
-# Executa a query com sfdx
-info "📦 Exportando Vínculos relacionados à parametrização do CustomMetadata ..."
-sfdx force:data:soql:query \
-  --query "QUERYAQUI" \
+# Executa a query (sem alterações)
+sf data query \
+  --query "QUERIE" \
   --target-org "$ORG_ALIAS_CONSULTA" > "$RAW_FILE"
 
 info "✅ Dados exportados com sucesso em: $RAW_FILE"
-info "🔁 Convertendo resultado tabulado em CSV limpo..."
+info "🔁 Convertendo resultado tabulado em CSV..."
 
-# Grava CSV com BOM e cabeçalho
-printf '\xEF\xBB\xBFCANAL;FORMATO\n' > "$OUTPUT_CSV"
+# Grava cabeçalho com BOM e CRLF
+printf '\xEF\xBB\xBFCANAL;FORMATO\r\n' > "$OUTPUT_CSV"
 
-# Processa resultado e limpa com awk
-grep -vE '^\+|^WM2_Canal_ID__r.Name' "$RAW_FILE" |
-awk -F '|' '{ gsub(/^[ \t]+|[ \t]+$/, "", $2); gsub(/^[ \t]+|[ \t]+$/, "", $3); print $2 ";" $3 }' >> "$OUTPUT_CSV"
+# Converte com awk confiável (elimina linhas inválidas e espaços)
+tail -n +3 "$RAW_FILE" | grep -vE '^\+|^WM2_Canal_ID__r.Name' |
+awk -F '|' 'NF >= 3 {
+  canal=$2; formato=$3;
+  gsub(/^[ \t]+|[ \t]+$/, "", canal);
+  gsub(/^[ \t]+|[ \t]+$/, "", formato);
+  if (canal != "" && formato != "") {
+    printf "%s;%s\r\n", canal, formato;
+  }
+}' >> "$OUTPUT_CSV"
 
-success "✅ Dados formatados exportados para: $OUTPUT_CSV"
-success "⚠️  Lembre-se de revisar CANAL x FORMATO para marcar os que precisam de Custom Metadata."
+success "✅ CSV gerado com sucesso: $OUTPUT_CSV"
