@@ -3,11 +3,22 @@ import shutil
 import json
 from datetime import datetime
 
-# === 1. Carrega os arquivos de configuração ===
+# === Função para converter caminho do Git Bash para Windows ===
+def path_gitbash_para_windows(caminho):
+    """
+    Converte caminhos como /c/Users/... em C:/Users/... de forma segura
+    """
+    if caminho.startswith("/") and len(caminho) > 2 and caminho[2] == '/':
+        drive = caminho[1]
+        resto = caminho[2:]
+        return os.path.normpath(f"{drive.upper()}:/{resto}")
+    return os.path.normpath(caminho)
+
+# === Arquivos de entrada ===
 ARQ_EXECUCAO = "11_extract_org_metadata.json"
 ARQ_MAPA_PASTAS = "21_mapa_pastas_componentes.json"
 
-# Lê JSON de execução
+# === Carrega o JSON de configuração ===
 if not os.path.isfile(ARQ_EXECUCAO):
     print(f"❌ Arquivo não encontrado: {ARQ_EXECUCAO}")
     exit(1)
@@ -15,20 +26,18 @@ if not os.path.isfile(ARQ_EXECUCAO):
 with open(ARQ_EXECUCAO, "r", encoding="utf-8") as f:
     config_exec = json.load(f)
 
-origem_base = os.path.normpath(config_exec.get("diretorioProjetosSF", ""))
-destino_base = os.path.normpath(config_exec.get("diretorioAlteracaoCustomMtdLote", ""))
+# Converte caminhos mesmo se vierem no formato /c/...
+origem_base = path_gitbash_para_windows(config_exec.get("diretorioProjetosSF", ""))
+destino_base = path_gitbash_para_windows(config_exec.get("diretorioAlteracaoCustomMtdLote", ""))
 
 if not origem_base or not destino_base:
-    print("❌ Caminhos 'diretorioProjetosSF' ou 'diretorioAlteracaoCustomMtdLote' ausentes no JSON.")
+    print("❌ Caminhos 'diretorioProjetosSF' ou 'diretorioAlteracaoCustomMtdLote' ausentes ou inválidos.")
     exit(1)
 
-# Caminho final do backup
 backup_dir = os.path.join(destino_base, "bckp_preRet")
-
-# Cria diretório raiz do backup antes de tudo
 os.makedirs(backup_dir, exist_ok=True)
 
-# Lê o mapa de pastas
+# === Carrega o JSON de mapeamento ===
 if not os.path.isfile(ARQ_MAPA_PASTAS):
     print(f"❌ Arquivo não encontrado: {ARQ_MAPA_PASTAS}")
     exit(1)
@@ -36,10 +45,9 @@ if not os.path.isfile(ARQ_MAPA_PASTAS):
 with open(ARQ_MAPA_PASTAS, "r", encoding="utf-8") as f:
     mapa_pastas = json.load(f)
 
-# Lista de tipos de metadado usados
 tipos_utilizados = [c.get("tipoComponente") for c in config_exec.get("componentes", [])]
 
-# === 2. Início do processo de cópia ===
+# === Início do backup ===
 timestamp = datetime.now().strftime("%Y%m%d-%H-%M")
 print()
 print(f"🚀 INÍCIO BACKUP: {timestamp}")
@@ -62,7 +70,6 @@ for tipo in tipos_utilizados:
         print(f"⚠️ Pasta de origem não encontrada: {pasta_origem}")
         continue
 
-    # Garante a criação da subpasta de destino
     os.makedirs(pasta_destino, exist_ok=True)
 
     for root, _, files in os.walk(pasta_origem):
@@ -76,7 +83,7 @@ for tipo in tipos_utilizados:
             print(f"✅ Copiado: {caminho_relativo}")
             copiados += 1
 
-# === 3. Finalização ===
+# === Finalização ===
 print()
 if copiados == 0:
     print("⚠️ Nenhum arquivo foi copiado.")
