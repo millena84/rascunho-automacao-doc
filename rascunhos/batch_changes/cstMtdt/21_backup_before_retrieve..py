@@ -3,61 +3,85 @@ import shutil
 import json
 from datetime import datetime
 
-# Caminho original da pasta Salesforce (fornecido fixo)
-base_default_dir = r"C:\Users\mille\projetosSF\model_project_sf_it-bc\force-app\main\default"
+# === 1. Carrega os arquivos de configuração ===
+ARQ_EXECUCAO = "11_extract_org_metadata.json"
+ARQ_MAPA_PASTAS = "21_mapa_pastas_componentes.json"
 
-# Timestamp para controle e exibição
-timestamp = datetime.now().strftime("%Y%m%d-%H-%M")
-passo_exec = datetime.now().strftime("%Y%m%d-%H-%M")
-
-# Carrega o caminho do JSON
-json_path = "configuracoes_execucao.json"  # ajuste se necessário
-with open(json_path, "r", encoding="utf-8") as f:
-    config = json.load(f)
-
-# Caminho base vindo do JSON
-destino_base = config.get("diretorioAlteracaoCustomMtdLote")
-
-if not destino_base:
-    print("❌ Caminho 'diretorioAlteracaoCustomMtdLote' não encontrado no JSON.")
+# Lê JSON de execução
+if not os.path.isfile(ARQ_EXECUCAO):
+    print(f"❌ Arquivo não encontrado: {ARQ_EXECUCAO}")
     exit(1)
 
-# Caminho final de backup: <diretorioAlteracaoCustomMtdLote>/bckp_preRet
+with open(ARQ_EXECUCAO, "r", encoding="utf-8") as f:
+    config_exec = json.load(f)
+
+origem_base = os.path.normpath(config_exec.get("diretorioProjetosSF", ""))
+destino_base = os.path.normpath(config_exec.get("diretorioAlteracaoCustomMtdLote", ""))
+
+if not origem_base or not destino_base:
+    print("❌ Caminhos 'diretorioProjetosSF' ou 'diretorioAlteracaoCustomMtdLote' ausentes no JSON.")
+    exit(1)
+
+# Caminho final do backup
 backup_dir = os.path.join(destino_base, "bckp_preRet")
 
-print()
-print(f"🚀 INICIO PROCESSO BACKUP     {passo_exec}")
-print(f"📂 Origem: {base_default_dir}")
-print(f"📂 Backup: {backup_dir}")
-print()
-
-# Valida se a pasta de origem existe
-if not os.path.isdir(base_default_dir):
-    print(f"❌ Pasta de origem não encontrada: {base_default_dir}")
-    print(f"❌ FIM EXECUCAO: {passo_exec}")
-    exit(1)
-
-# Cria a pasta de destino se necessário
+# Cria diretório raiz do backup antes de tudo
 os.makedirs(backup_dir, exist_ok=True)
 
-# Copia arquivos internos (sem copiar a própria raiz)
+# Lê o mapa de pastas
+if not os.path.isfile(ARQ_MAPA_PASTAS):
+    print(f"❌ Arquivo não encontrado: {ARQ_MAPA_PASTAS}")
+    exit(1)
+
+with open(ARQ_MAPA_PASTAS, "r", encoding="utf-8") as f:
+    mapa_pastas = json.load(f)
+
+# Lista de tipos de metadado usados
+tipos_utilizados = [c.get("tipoComponente") for c in config_exec.get("componentes", [])]
+
+# === 2. Início do processo de cópia ===
+timestamp = datetime.now().strftime("%Y%m%d-%H-%M")
+print()
+print(f"🚀 INÍCIO BACKUP: {timestamp}")
+print(f"📂 Origem base : {origem_base}")
+print(f"📁 Backup para : {backup_dir}")
+print()
+
 copiados = 0
-for root, dirs, files in os.walk(base_default_dir):
-    for file in files:
-        origem_path = os.path.join(root, file)
-        caminho_relativo = os.path.relpath(origem_path, base_default_dir)
-        destino_path = os.path.join(backup_dir, caminho_relativo)
 
-        os.makedirs(os.path.dirname(destino_path), exist_ok=True)
-        shutil.copy2(origem_path, destino_path)
+for tipo in tipos_utilizados:
+    subpasta = mapa_pastas.get(tipo)
+    if not subpasta:
+        print(f"⚠️ Tipo '{tipo}' não mapeado. Pulando...")
+        continue
 
-        print(f"✅ Copiado: {caminho_relativo}")
-        copiados += 1
+    pasta_origem = os.path.join(origem_base, subpasta)
+    pasta_destino = os.path.join(backup_dir, subpasta)
 
+    if not os.path.isdir(pasta_origem):
+        print(f"⚠️ Pasta de origem não encontrada: {pasta_origem}")
+        continue
+
+    # Garante a criação da subpasta de destino
+    os.makedirs(pasta_destino, exist_ok=True)
+
+    for root, _, files in os.walk(pasta_origem):
+        for file in files:
+            origem_path = os.path.join(root, file)
+            caminho_relativo = os.path.relpath(origem_path, origem_base)
+            destino_path = os.path.join(backup_dir, caminho_relativo)
+
+            os.makedirs(os.path.dirname(destino_path), exist_ok=True)
+            shutil.copy2(origem_path, destino_path)
+            print(f"✅ Copiado: {caminho_relativo}")
+            copiados += 1
+
+# === 3. Finalização ===
+print()
 if copiados == 0:
-    print("⚠️  Nenhum arquivo encontrado para copiar.")
+    print("⚠️ Nenhum arquivo foi copiado.")
 else:
-    print(f"\n📦 Backup concluído! Total de arquivos copiados: {copiados}")
-    print(f"📁 Conteúdo salvo em: {backup_dir}")
+    print(f"🎉 Backup finalizado. Total de arquivos copiados: {copiados}")
+    print(f"📦 Backup salvo em: {backup_dir}")
 
-print(f"✅ FIM EXECUCAO (passo exec): {passo_exec}")
+print(f"🏁 FIM: {datetime.now().strftime('%Y%m%d-%H-%M')}")
