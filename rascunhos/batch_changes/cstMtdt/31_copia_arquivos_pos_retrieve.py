@@ -13,36 +13,40 @@ def path_gitbash_para_windows(caminho):
             return os.path.abspath(os.path.normpath(f"{drive}:/{resto}"))
     return os.path.abspath(os.path.normpath(caminho))
 
-# === Parâmetros ===
+# === Carrega parâmetros do JSON ===
 ARQ_EXECUCAO = "11_extract_org_metadata.json"
 
 with open(ARQ_EXECUCAO, "r", encoding="utf-8") as f:
     config = json.load(f)
 
-# Extrai parâmetros convertendo caminhos
+# Parâmetros extraídos e convertidos
 origem_base = path_gitbash_para_windows(config.get("diretorioProjetosSF", ""))
 destino_base = path_gitbash_para_windows(config.get("diretorioAlteracaoCustomMtdLote", ""))
 filtro_nome = config.get("filtroNomeArquivo", "").strip()
 dir_componente = config.get("diretorioComponente", "").strip()
 
-# Valida obrigatórios
 if not filtro_nome or not dir_componente:
-    print("❌ Campos obrigatórios 'filtroNomeArquivo' ou 'diretorioComponente' ausentes.")
+    print("❌ Faltando 'filtroNomeArquivo' ou 'diretorioComponente' no JSON.")
     exit(1)
 
-# Caminhos finais
-pasta_origem = os.path.join(origem_base, dir_componente)
+# Remove barras iniciais de segurança e monta caminho final da origem
+dir_componente = dir_componente.lstrip("/\\")
+pasta_origem = os.path.normpath(os.path.join(origem_base, dir_componente))
+
+# Pasta de destino final (ex: bckp_preRet/entrada_xml_CamposCanalFormato_<timestamp>)
 timestamp = datetime.now().strftime("%Y%m%d-%H-%M")
-destino_filtrado = os.path.join(destino_base, "bckp_preRet", f"entrada_xml_{filtro_nome}_{timestamp}")
-os.makedirs(destino_filtrado, exist_ok=True)
+pasta_destino = os.path.join(destino_base, "bckp_preRet", f"entrada_xml_{filtro_nome}_{timestamp}")
+os.makedirs(pasta_destino, exist_ok=True)
 
-# Debug
-print(f"\n🔎 Procurando arquivos contendo '{filtro_nome}' em: {pasta_origem}")
-print(f"📂 Salvando cópias em: {destino_filtrado}\n")
+# Logs de debug
+print()
+print(f"🔍 Buscando arquivos com '{filtro_nome}'")
+print(f"📂 Origem : {pasta_origem}")
+print(f"📁 Destino: {pasta_destino}")
+print()
 
-# Execução
+# Verificação e cópia
 copiados = 0
-
 if not os.path.isdir(pasta_origem):
     print(f"❌ Pasta de origem não encontrada: {pasta_origem}")
     exit(1)
@@ -52,7 +56,7 @@ for root, _, files in os.walk(pasta_origem):
         if filtro_nome in file:
             origem_path = os.path.join(root, file)
             caminho_relativo = os.path.relpath(origem_path, pasta_origem)
-            destino_path = os.path.join(destino_filtrado, caminho_relativo)
+            destino_path = os.path.join(pasta_destino, caminho_relativo)
 
             os.makedirs(os.path.dirname(destino_path), exist_ok=True)
             shutil.copy2(origem_path, destino_path)
@@ -62,7 +66,7 @@ for root, _, files in os.walk(pasta_origem):
 # Finalização
 print()
 if copiados == 0:
-    print("⚠️ Nenhum arquivo encontrado com o filtro.")
+    print(f"⚠️ Nenhum arquivo contendo '{filtro_nome}' foi encontrado.")
 else:
-    print(f"🎉 {copiados} arquivo(s) copiado(s) com filtro '{filtro_nome}'.")
-    print(f"📦 Pasta de destino: {destino_filtrado}")
+    print(f"🎉 {copiados} arquivo(s) copiado(s) com sucesso.")
+    print(f"📦 Arquivos salvos em: {pasta_destino}")
