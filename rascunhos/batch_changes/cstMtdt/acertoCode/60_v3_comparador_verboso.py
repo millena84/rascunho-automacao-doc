@@ -1,41 +1,30 @@
 import csv
 import os
+from datetime import datetime
 
 # Caminhos
 arquivo_xml_custom = './1_metadados/_DadoCustomMetadata_ref.csv'
 arquivo_tabela = './1_metadados/_VincParCustom-CanalFormato.csv'
 arquivo_saida_para_alteracao = './3_saida_xml/1_listaCustomAlteracao.csv'
 arquivo_saida_para_criacao = './3_saida_xml/2_listaVinculosPrecisamCustom.csv'
+arquivo_log = './3_saida_xml/estatisticas_comparacao.txt'
 
 # Garante que os diretórios de saída existem
 os.makedirs(os.path.dirname(arquivo_saida_para_alteracao), exist_ok=True)
 os.makedirs(os.path.dirname(arquivo_saida_para_criacao), exist_ok=True)
 
+estatisticas = {
+    'total_xml': 0,
+    'total_tabela': 0,
+    'comparacoes_feitas': 0,
+    'gravados_alteracao': 0,
+    'gravados_criacao': 0,
+    'ignorados': 0,
+    'sem_correspondencia': 0
+}
+
 def normalizar(texto):
     return ''.join(filter(str.isalnum, str(texto).strip().lower()))
-
-def validar_csv_por_linha(caminho, esperado):
-    print(f"\n📋 Validando arquivo: {caminho}")
-    with open(caminho, 'r', encoding='utf-8-sig', newline='') as f:
-        linhas = f.readlines()
-        delimitador = ','
-        header = linhas[0].strip().split(delimitador)
-        if len(header) != esperado:
-            print(f"❌ Cabeçalho com {len(header)} campos, esperados {esperado}: {header}")
-            return False
-        for i, linha in enumerate(linhas[1:], start=2):
-            campos = linha.strip().split(delimitador)
-            if len(campos) != esperado:
-                print(f"❌ Linha {i} com {len(campos)} campos: {linha.strip()}")
-                return False
-    print("✅ Arquivo validado com sucesso!")
-    return True
-
-# Valida os dois arquivos antes de continuar
-if not validar_csv_por_linha(arquivo_xml_custom, 4):
-    exit(1)
-if not validar_csv_por_linha(arquivo_tabela, 3):
-    exit(1)
 
 def carregar_csv(path, delimitador=','):
     with open(path, 'r', encoding='utf-8-sig', newline='') as f:
@@ -47,6 +36,9 @@ def carregar_csv(path, delimitador=','):
 print("\n🚀 Iniciando comparação...")
 tabela = carregar_csv(arquivo_tabela, delimitador=',')
 origem = carregar_csv(arquivo_xml_custom, delimitador=',')
+
+estatisticas['total_tabela'] = len(tabela)
+estatisticas['total_xml'] = len(origem)
 
 # Normaliza a tabela de referência
 referencia = []
@@ -62,8 +54,6 @@ for linha in tabela:
             'formato': formato,
             'tem_dado_espec': tem_dado_espec
         })
-
-print(f"🔍 {len(referencia)} pares canal+formato carregados da tabela de referência")
 
 # Arquivos de saída
 with open(arquivo_saida_para_alteracao, 'w', newline='', encoding='utf-8') as f_out:
@@ -85,15 +75,16 @@ for row in origem:
 
     if not nome or not canal_xml or not formato_xml:
         print(f"⚠️ Ignorado por dados faltantes: {nome} | {canal_xml} | {formato_xml}")
+        estatisticas['ignorados'] += 1
         continue
 
+    estatisticas['comparacoes_feitas'] += 1
     encontrou = False
-    for ref in referencia:
+
+    similares = [ref for ref in referencia if ref['canal'] == canal_xml]
+    for ref in similares:
         canal_tab = ref['canal']
         formato_tab = ref['formato']
-
-        if canal_xml != canal_tab:
-            continue
 
         if (canal_tab, formato_tab) in usados:
             continue
@@ -102,7 +93,6 @@ for row in origem:
             continue
 
         if normalizar(formato_tab) in normalizar(formato_xml) or normalizar(formato_xml) in normalizar(formato_tab):
-            encontrou = True
             print("\n🔎 POSSÍVEL CORRESPONDÊNCIA ENCONTRADA:")
             print(f"Arquivo:        {nome}")
             print(f"Label:          {label}")
@@ -116,13 +106,15 @@ for row in origem:
                     writer = csv.writer(f_out, delimiter=';')
                     writer.writerow([nome, label, canal_xml, formato_xml, formato_tab, canal_tab])
                 usados.add((canal_tab, formato_tab))
+                estatisticas['gravados_alteracao'] += 1
                 print("✅ Gravado.")
+                break
             else:
-                print("⏩ Ignorado.")
-            break
+                print("⏩ Ignorado. Buscando outros semelhantes...")
 
     if not encontrou:
         print(f"❌ Nenhuma correspondência para: {nome} | {canal_xml} | {formato_xml}")
+        estatisticas['sem_correspondencia'] += 1
 
 # Cria novos registros
 contador = 1
@@ -133,5 +125,12 @@ with open(arquivo_saida_para_criacao, 'a', newline='', encoding='utf-8') as f_cr
             nome_custom = f"CamposCanalFormato.{normalizar(item['formato'])}{contador:03d}-md-meta.xml"
             writer.writerow([nome_custom, '', '', '', item['canal'], item['formato'], '', ''])
             contador += 1
+            estatisticas['gravados_criacao'] += 1
 
-print("\n🏁 PROCESSAMENTO FINALIZADO.")
+# Gerar log final
+with open(arquivo_log, 'w', encoding='utf-8') as flog:
+    flog.write(f"Estatísticas de Execução - {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n")
+    for chave, valor in estatisticas.items():
+        flog.write(f"{chave}: {valor}\n")
+
+print("\n🏁 PROCESSAMENTO FINALIZADO. Estatísticas salvas em:", arquivo_log)
