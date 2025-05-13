@@ -26,6 +26,33 @@ estatisticas = {
 def normalizar(texto):
     return ''.join(filter(str.isalnum, str(texto).strip().lower()))
 
+def diagnosticar_csv_estrutural(caminho, esperado, nome):
+    print(f"\n📋 Diagnosticando estrutura do CSV: {nome}")
+    try:
+        with open(caminho, 'r', encoding='utf-8-sig', newline='') as f:
+            linhas = f.readlines()
+            delimitador = ';' if linhas[0].count(';') >= linhas[0].count(',') else ','
+            cabecalho = linhas[0].strip().split(delimitador)
+            if len(cabecalho) != esperado:
+                print(f"❌ Cabeçalho com {len(cabecalho)} colunas (esperado: {esperado}): {cabecalho}")
+                return False
+            for i, linha in enumerate(linhas[1:], start=2):
+                if linha.strip() == '':
+                    continue
+                if linha.count(delimitador) != (esperado - 1):
+                    print(f"❌ Linha {i} com {linha.count(delimitador)+1} colunas: {linha.strip()}")
+                    return False
+        print("✅ Estrutura do CSV validada com sucesso!")
+        return True
+    except Exception as e:
+        print(f"❌ Erro ao diagnosticar {nome}: {e}")
+        return False
+
+if not diagnosticar_csv_estrutural(arquivo_xml_custom, 4, '_DadoCustomMetadata_ref.csv'):
+    exit(1)
+if not diagnosticar_csv_estrutural(arquivo_tabela, 3, '_VincParCustom-CanalFormato.csv'):
+    exit(1)
+
 def carregar_csv(path, delimitador=','):
     with open(path, 'r', encoding='utf-8-sig', newline='') as f:
         reader = csv.DictReader(f, delimiter=delimitador)
@@ -93,6 +120,7 @@ for row in origem:
             continue
 
         if normalizar(formato_tab) in normalizar(formato_xml) or normalizar(formato_xml) in normalizar(formato_tab):
+            encontrou = True
             print("\n🔎 POSSÍVEL CORRESPONDÊNCIA ENCONTRADA:")
             print(f"Arquivo:        {nome}")
             print(f"Label:          {label}")
