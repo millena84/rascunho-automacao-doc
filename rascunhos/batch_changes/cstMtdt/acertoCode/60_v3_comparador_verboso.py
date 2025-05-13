@@ -14,6 +14,29 @@ os.makedirs(os.path.dirname(arquivo_saida_para_criacao), exist_ok=True)
 def normalizar(texto):
     return ''.join(filter(str.isalnum, str(texto).strip().lower()))
 
+def validar_csv_por_linha(caminho, esperado):
+    print(f"\n📋 Validando arquivo: {caminho}")
+    with open(caminho, 'r', encoding='utf-8-sig', newline='') as f:
+        linhas = f.readlines()
+        delimitador = ','
+        header = linhas[0].strip().split(delimitador)
+        if len(header) != esperado:
+            print(f"❌ Cabeçalho com {len(header)} campos, esperados {esperado}: {header}")
+            return False
+        for i, linha in enumerate(linhas[1:], start=2):
+            campos = linha.strip().split(delimitador)
+            if len(campos) != esperado:
+                print(f"❌ Linha {i} com {len(campos)} campos: {linha.strip()}")
+                return False
+    print("✅ Arquivo validado com sucesso!")
+    return True
+
+# Valida os dois arquivos antes de continuar
+if not validar_csv_por_linha(arquivo_xml_custom, 4):
+    exit(1)
+if not validar_csv_por_linha(arquivo_tabela, 3):
+    exit(1)
+
 def carregar_csv(path, delimitador=','):
     with open(path, 'r', encoding='utf-8-sig', newline='') as f:
         reader = csv.DictReader(f, delimiter=delimitador)
