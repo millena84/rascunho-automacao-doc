@@ -83,11 +83,11 @@ for linha in tabela:
         })
 
 # Arquivos de saída
-with open(arquivo_saida_para_alteracao, 'w', newline='', encoding='utf-8') as f_out:
+with open(arquivo_saida_para_alteracao, 'w', newline='', encoding='utf-8-sig') as f_out:
     writer = csv.writer(f_out, delimiter=';')
     writer.writerow(['Arquivo', 'Label', 'CANAL_XML', 'FORMATO_XML', 'FORMATO_TABELA', 'CANAL_TABELA'])
 
-with open(arquivo_saida_para_criacao, 'w', newline='', encoding='utf-8') as f_cria:
+with open(arquivo_saida_para_criacao, 'w', newline='', encoding='utf-8-sig') as f_cria:
     writer = csv.writer(f_cria, delimiter=';')
     writer.writerow(['label', 'CampoRelacionamentoObjetoFilho', 'CampoRelacionamentoObjetoPai',
                      'CamposTela', 'Canal', 'Formato', 'Objeto', 'TelaUtilizada'])
@@ -120,7 +120,6 @@ for row in origem:
             continue
 
         if normalizar(formato_tab) in normalizar(formato_xml) or normalizar(formato_xml) in normalizar(formato_tab):
-            encontrou = True
             print("\n🔎 POSSÍVEL CORRESPONDÊNCIA ENCONTRADA:")
             print(f"Arquivo:        {nome}")
             print(f"Label:          {label}")
@@ -130,12 +129,12 @@ for row in origem:
             print(f"FORMATO_TABELA: {formato_tab}")
             resp = input("👉 Deseja gravar este como alteração? (s/n): ").strip().lower()
             if resp == 's':
-                with open(arquivo_saida_para_alteracao, 'a', newline='', encoding='utf-8') as f_out:
+                with open(arquivo_saida_para_alteracao, 'a', newline='', encoding='utf-8-sig') as f_out:
                     writer = csv.writer(f_out, delimiter=';')
                     writer.writerow([nome, label, canal_xml, formato_xml, formato_tab, canal_tab])
                 usados.add((canal_tab, formato_tab))
                 estatisticas['gravados_alteracao'] += 1
-                print("✅ Gravado.")
+                encontrou = True
                 break
             else:
                 print("⏩ Ignorado. Buscando outros semelhantes...")
@@ -146,7 +145,7 @@ for row in origem:
 
 # Cria novos registros
 contador = 1
-with open(arquivo_saida_para_criacao, 'a', newline='', encoding='utf-8') as f_cria:
+with open(arquivo_saida_para_criacao, 'a', newline='', encoding='utf-8-sig') as f_cria:
     writer = csv.writer(f_cria, delimiter=';')
     for item in referencia:
         if item['tem_dado_espec'] and (item['canal'], item['formato']) not in usados:
@@ -156,7 +155,7 @@ with open(arquivo_saida_para_criacao, 'a', newline='', encoding='utf-8') as f_cr
             estatisticas['gravados_criacao'] += 1
 
 # Gerar log final
-with open(arquivo_log, 'w', encoding='utf-8') as flog:
+with open(arquivo_log, 'w', encoding='utf-8-sig') as flog:
     flog.write(f"Estatísticas de Execução - {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n")
     for chave, valor in estatisticas.items():
         flog.write(f"{chave}: {valor}\n")
