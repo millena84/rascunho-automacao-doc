@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Flow xmlns="http://soap.sforce.com/2006/04/metadata">
+    <status>Active</status>
+    <processMetadataValues>
+        <name>ObjectType</name>
+        <value>
+            <stringValue>Fila__c</stringValue>
+        </value>
+    </processMetadataValues>
+    <processMetadataValues>
+        <name>TriggerType</name>
+        <value>
+            <stringValue>RecordUpdate</stringValue>
+        </value>
+    </processMetadataValues>
+    <label>Enviar Notificação para Membros da Fila</label>
+    <description>Flow que envia emails e notificações para todos os membros de uma fila quando o status muda.</description>
+</Flow>

@@ -1,0 +1,34 @@
+### Rascunho de Elementos do Flow
+
+1. **Start Element**
+   - Trigger: Record Updated
+   - Object: Fila__c
+   - Condition: ISCHANGED(Status__c) == TRUE
+
+2. **Decision: Status Alterado?**
+   - Condition: ISCHANGED({!$Record.Status__c}) == TRUE
+
+3. **Get Records: Buscar Membros da Fila**
+   - Object: GroupMember
+   - Filter: GroupId = {!$Record.OwnerId}
+
+4. **Loop: Loop nos Membros**
+   - Collection: {!GroupMembers}
+
+5. **Get Records (User): Buscar Email do Usuário**
+   - Object: User
+   - Filter: Id = {!Looped_GroupMember.UserOrGroupId}
+
+6. **Action: Send Email**
+   - To: {!User.Email}
+   - Subject: Status alterado - {!$Record.Name}
+   - Body: Mensagem com status anterior, atual, data/hora e link
+
+7. **(Opcional) Action: Send Custom Notification**
+   - Target: {!User.Id}
+   - Message: Idem ao email
+
+8. **Assignment: Adicionar Usuário à Lista de Notificados**
+   - Collection: Usuários já notificados (para evitar duplicatas)
+
+9. **End Loop**

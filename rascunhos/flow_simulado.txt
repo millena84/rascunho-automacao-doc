@@ -1,0 +1,21 @@
+FLUXO SIMULADO: ENVIO DE NOTIFICAÇÕES PARA MEMBROS DA FILA
+
+Etapas Visuais:
+
+1. Trigger - Record Updated
+   Objeto: Fila__c
+   Condição: ISCHANGED(Status__c)
+
+2. Decisão - Verifica se houve mudança de status
+
+3. Get Records - Busca GroupMember onde GroupId = OwnerId
+
+4. Loop - Percorre cada membro
+
+5. Get Records (User) - Pega email do usuário
+
+6. Send Email - Envia email para o usuário
+
+7. Send Notification - (Opcional) Notificação personalizada
+
+8. Fim do loop
