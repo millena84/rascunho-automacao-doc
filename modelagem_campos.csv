@@ -1,0 +1,5 @@
+Objeto,Campo,Tipo,Descrição
+JT,Equipe__c,Lookup(Account),Equipe responsável
+JT,Pode_Editar__c,Checkbox,Controla se o registro pode ser editado
+Case,Tipo_de_Ajuste__c,Picklist,Tipo do ajuste solicitado
+Case,Projeto__c,Lookup(JT),Vincula Case ao projeto
