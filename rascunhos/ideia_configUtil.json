@@ -1,0 +1,128 @@
+{
+    "infoVscode": [
+        {
+            "_explicacao": "Informe os diretorios onde você hospeda seus projetos do Vscode. É a referência para pegar o caminho inicial e montar com os demais diretorios de projetos SF de acordo com o ambiente desejado. Separado em dois formatos para permitir usar Git Bash no windows (posix) ou cmd do windows (path).", 
+            "dirPosixRepoVscode": "/c/Users/mille/projetosSf",
+            "dirWinPathRepoVscode": "C:\\Users\\mille\\projetosSf"
+        }   
+    ],
+    "infoOrgsSf": {
+        "ambTeste": [
+            {
+                "_explicacao": "Informe as configurações desejadas de acordo com o que pretende definir para crição de projeto SF E conexão com organizações e sandboxes.",
+                "aliasOrg": "aliasDesejadoTeste",
+                "urlLogin": "https://test.salesforce.com",
+                "username": "user@nomeOrganizacaoSf.sandbox",
+                "dirPosixProjSf": "/NOME_DIR_SAND_TESTE",
+                "dirWinPathProjSf": "\\NOME_DIR_SAND_TESTE"
+            }
+        ],
+        "ambienteDev": [
+            {
+                "_explicacao": "Informe as configurações desejadas de acordo com o que pretende definir para crição de projeto SF E conexão com organizações e sandboxes.",
+                "aliasOrg": "aliasDesejadoDev",
+                "urlLogin": "https://test.salesforce.com",
+                "username": "user@nomeOrganizacaoSf.sandbox",
+                "dirPosixProjSf": "/NOME_DIR_SAND_DEV",
+                "dirWinPathProjSf": "\\NOME_DIR_SAND_DEV"
+            }
+        ],
+        "ambientePrd": [
+            {
+                "_explicacao": "Informe as configurações desejadas de acordo com o que pretende definir para crição de projeto SF E conexão com organizações e sandboxes.",
+                "aliasOrg": "aliasDesejadoPrd",
+                "urlLogin": "https://login.salesforce.com",
+                "username": "user@nomeOrganizacaoSf",
+                "dirPosixProjSf": "/NOME_DIR_SAND_PRD",
+                "dirWinPathProjSf": "\\NOME_DIR_SAND_PRD"
+            }
+        ],
+        "ambienteIt": [
+            {
+                "_explicacao": "Informe as configurações desejadas de acordo com o que pretende definir para crição de projeto SF E conexão com organizações e sandboxes.",
+                "aliasOrg": "aliasDesejadoIt",
+                "urlLogin": "https://test.salesforce.com",
+                "username": "user@nomeOrganizacaoSf.it",
+                "dirPosixProjSf": "/NOME_DIR_SAND_IT",
+                "dirWinPathProjSf": "\\NOME_DIR_SAND_IT"
+            }
+        ],
+        "ambienteUat": [
+            {
+                "_explicacao": "Informe as configurações desejadas de acordo com o que pretende definir para crição de projeto SF E conexão com organizações e sandboxes.",
+                "aliasOrg": "aliasDesejadoUat",
+                "urlLogin": "https://test.salesforce.com",
+                "username": "nome usuario login UAT",
+                "dirPosixProjSf": "/NOME_DIR_SAND_UAT",
+                "dirWinPathProjSf": "\\NOME_DIR_SAND_UAT"
+            }
+        ]
+    },
+    "infoGit": {
+        "repositorios": [
+            {
+                "_explicacao": "endereços dos repositórios git onde estão os códigos para cada processo utilitario.",
+                "criacaoAmbiente": "endereçoProjetoCriacaoAmbienteSF",
+                "processoLote": "endereçoRepoGit",
+                "processoDoc": "endereçoProcessoDoc"
+            }
+        ]
+    },
+    "infoEspecificaProcessos": {
+        "configAmbiente": [
+            {
+                "_explicacao": "Aqui você especifica sua org de trabalho para configuração de ambiente. Exemplo: vou criar projeto para construir coisas cuja referencia é desenvolvimento: ambas as orgs deverão ter o alias desejado pra sua org de desenvolvimento. Exemplo 2: vou criar projeto para construir um alteração cuja referência é o ambiente de produção: orgDeTrabalho = sand de desenvolvimento; orgReferencia = sand de produção. Exemplo 3: vou criar projeto para construir um alteração cuja referência é o ambiente de homologação: orgDeTrabalho = sand de desenvolvimento; orgReferencia = sand de homologação. CASO na criação do ambiente você optar por já fazer o retrieve, será usada a orgReferencia",
+                "orgDeTrabalho": "aliasOrgLOGADA_ondeVaiTrabalhar",
+                "orgReferencia": "aliasOrgLOGADA_referenciaParaTrabalho",
+                "infoDevHub": {
+                    "aliasScratch": "",
+                    "dirPosixSfdxProjScratch": "./NOME_DIR_SFDX_PROJ_SCRATCH",
+                    "dirWinPathSfdxProjScratch": "\\NOME_DIR_SFDX_PROJ_SCRATCH"
+                }
+            }
+        ],
+        "retrieve": [
+            {
+                "_explicacao": "Retrieve considera sempre o ambiente e pastas de referencia relacionados a organização. Se referencia for desenvolvimento, todas as informações devem estar adequadas para apontar para as relativas a desenvolvimento.",
+                "orgRef": "aliasOrgReferenciaRetrieve",
+                "dirPosixRef": "/NOME_DIR_PROJETO_SF_ONDE_VAI_FAZER_O_RETRIEVE",
+                "dirWinPathRef": "\\NOME_DIR_PROJETO_SF_ONDE_VAI_FAZER_O_RETRIEVE",
+                "manifestUsado": "custom",
+                "dirManifestPadrao": "manifest/package.xml",
+                "infoRetrieveCustom": [
+                    {
+                        "tipoComponente": "CustomObject",
+                        "filtros": ["IUJ", "__mdt"]
+                    },
+                    {
+                        "tipoComponente": "CustomMetadata",
+                        "filtros": ["IUJ"]
+                    },
+                    {
+                        "tipoComponente": "CompactLayout",
+                        "filtros": ["IUJ"]
+                    },
+
+                    {
+                        "tipoComponente": "ValidationRule",
+                        "filtros": ["IUJ"]
+                    }
+                ]
+            }
+        ],
+        "avaliacaoCustomMdt": [
+            {
+                "infoCopiaLocal": {
+                    "dirPosixCompPrincipal": "/CustomMetadata",
+                    "filtroNomeArquivosAlvo": "CamposCanalFormato",
+                    "filtroExclusao": "XXX"
+                },
+                "VinculoSuportados": {
+                    "QueryVinculoCanFor": "~/utilitarios/dados/consultasProcessos/VincCanFor_customMdt.soql",
+                    "QueryVinculoNegCan": "~/utilitarios/dados/consultasProcessos/VincCanFor_customMdt.soql"
+                },
+                "VinculoAlvo": "QueryVinculoCanFor"
+            }
+        ]
+    }
+}
