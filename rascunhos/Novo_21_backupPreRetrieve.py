@@ -1,54 +1,106 @@
-#!/bin/bash
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
 
-================================================================
+import os
+import shutil
+import json
+from datetime import datetime
 
-Script: 20_pre_retrieve_criar_package_xml.sh
+# === Script python: 21_backup_pre_retrieve.py ===
 
-Objetivo: Gerar um package.xml baseado nos arquivos CSVs de tipos
+# === Arquivos de configuração ===
+ARQ_EXECUCAO = "/c/Users/mille/projetosSf/_configUtil.json"
+ARQ_EXECUCAO_WIN = os.popen(f"cygpath -w {ARQ_EXECUCAO}").read().strip()
+ARQ_MAPA_PASTAS = "21_mapa_pastas_compSf.json"
 
-de metadados informados no JSON de configuração
+# === Função robusta para converter caminhos estilo Git-Bash para Windows ===
+def path_gitbash_para_windows(caminho):
+    if caminho.startswith("/"):
+        partes = caminho.strip("/").split("/", 1)
+        if len(partes) == 2 and len(partes[0]) == 1:
+            drive = partes[0].upper()
+            resto = partes[1]
+            return os.path.abspath(os.path.normpath(f"{drive}:/{resto}"))
+    return os.path.abspath(os.path.normpath(caminho))
 
-================================================================
+# === Carrega JSON de execução ===
+with open(ARQ_EXECUCAO_WIN, "r", encoding="utf-8") as f:
+    config_exec = json.load(f)
 
-CONFIG_FILE="/c/Users/mille/projetosSf/_configUtil.json"  # POSIX CONFIG_FILE_WIN=$(cygpath -w "$CONFIG_FILE") PASTA_CSV="./1_metadados" DATAHORA=$(date "+%Y%m%d-%H%M%S") ARQUIVO_XML_FINAL="./21_packageForRetrieve.xml" ARQUIVO_XML_VERSIONADO="./_retrieves/${DATAHORA}_21_packageForRetrieve.xml"
+# === Converte caminhos ===
+retrieve_info = config_exec.get("infoEspecificaProcessos", {}).get("retrieve", [{}])[0]
+origem_base = path_gitbash_para_windows(retrieve_info.get("dirPosixRef", ""))
+destino_base = path_gitbash_para_windows(
+    config_exec.get("infoEspecificaProcessos", {}).get("avaliacaoCustomMdt", [{}])[0]
+    .get("infoCopiaLocal", {})
+    .get("dirPosixCompPrincipal", "")
+)
+backup_dir = os.path.join(destino_base, "9_bckp_preRet")
 
-function info { echo -e "\033[1;34m[INFO]\033[0m $1" } function success { echo -e "\033[1;32m[SUCCESS]\033[0m $1" } function error { echo -e "\033[1;31m[ERROR]\033[0m $1" }
+timestamp = datetime.now().strftime("%d/%m/%Y - %H:%M:%S")
+print(f"\n== INÍCIO PROCESSO: BACKUP - PASTAS DA '/force-app/main/default/': {timestamp}")
+print(f" - Origem: {origem_base}")
+print(f" - Destino: {backup_dir}\n")
 
-echo -e "\033[1;33m------------------------------------------------------------\033[0m" echo -e "  📦  INICIANDO ESTRUTURAÇÃO PACKAGE.XML PARA RETRIEVE" echo -e "  🔁  SERÁ A REFERÊNCIA DO PROCESSO DE CUSTOMMETADATA" echo -e "  🔍  INÍCIO EXECUÇÃO: $(date '+%d/%m/%Y - %H:%M:%S')" echo -e "\033[1;33m------------------------------------------------------------\033[0m"
+# === Logs de verificação ===
+print(f"🔵 Caminho origem JSON (raw)  : {retrieve_info.get('dirPosixRef', '')}")
+print(f"🔵 Caminho origem convertido : {origem_base}")
+print(f"🔵 Caminho destino JSON (raw): {destino_base}")
+print(f"🔵 Caminho destino convertido: {backup_dir}\n")
 
-API_VERSION="58.0" mkdir -p ./_retrieves
+if not os.path.isdir(origem_base):
+    print(f"❌ Pasta de origem não encontrada: {origem_base}")
+    print(f"❌ FIM EXECUÇÃO: {datetime.now().strftime('%d/%m/%Y - %H:%M:%S')}")
+    exit(1)
 
-=== Início do package.xml ===
+os.makedirs(backup_dir, exist_ok=True)
 
-echo '<?xml version="1.0" encoding="UTF-8"?>' > "$ARQUIVO_XML_FINAL" echo '<Package xmlns="http://soap.sforce.com/2006/04/metadata">' >> "$ARQUIVO_XML_FINAL"
+# === Carrega mapeamento de pastas ===
+with open(ARQ_MAPA_PASTAS, "r", encoding="utf-8") as f:
+    mapa_pastas = json.load(f)
 
-=== Itera sobre os tipos do JSON (agora em infoEspecificaProcessos.retrieve[0].infoRetrieveCustom) ===
+componentes = retrieve_info.get("infoRetrieveCustom", [])
+tipos_utilizados = [c.get("tipoComponente") for c in componentes]
 
-COMPONENTES=$(node -e " try { const cfg = require('$CONFIG_FILE_WIN'); const lista = cfg.infoEspecificaProcessos?.retrieve?.[0]?.infoRetrieveCustom || []; console.log(lista.map(c => c.tipoComponente).join(' ')); } catch (e) { console.error('❌ Erro ao extrair tipos do JSON:', e.message); process.exit(1); } ")
+# === Início do backup ===
+print(f"🟠 INÍCIO BACKUP: {timestamp}")
+print(f"🟠 Origem: {origem_base}")
+print(f"🟠 Destino: {backup_dir}\n")
 
-IFS=' ' read -ra TIPOS <<< "$COMPONENTES"
+copiados = 0
 
-for tipo in "${TIPOS[@]}"; do tipoLower=$(echo "$tipo" | tr '[:upper:]' '[:lower:]') csv_path="$PASTA_CSV/Extracao${tipoLower}.csv"
+for tipo in tipos_utilizados:
+    subpasta = mapa_pastas.get(tipo)
+    if not subpasta:
+        print(f"⚠️ Tipo '{tipo}' não mapeado. Pulando...")
+        continue
 
-if [[ -f "$csv_path" ]]; then info "⏰  HORÁRIO (passo exec): $(date '+%d/%m/%Y - %H:%M:%S')" info "📂  Incluindo tipo: $tipo" info "📄  Arquivo: $(basename "$csv_path")"
+    pasta_origem = os.path.join(origem_base, subpasta)
+    pasta_destino = os.path.join(backup_dir, subpasta)
 
-echo "  <types>" >> "$ARQUIVO_XML_FINAL"
-while IFS= read -r linha || [[ -n "$linha" ]]; do
-  [[ -z "$linha" ]] && continue
-  echo "    <members>$linha</members>" >> "$ARQUIVO_XML_FINAL"
-done < "$csv_path"
-echo "    <name>$tipo</name>" >> "$ARQUIVO_XML_FINAL"
-echo "  </types>" >> "$ARQUIVO_XML_FINAL"
+    if not os.path.isdir(pasta_origem):
+        print(f"❌ Pasta de origem não encontrada: {pasta_origem}")
+        continue
 
-else echo "⚠️  Tipo ${tipo} não encontrado em $PASTA_CSV. Pulando." fi
+    os.makedirs(pasta_destino, exist_ok=True)
 
-done
+    for root, _, files in os.walk(pasta_origem):
+        for file in files:
+            origem_path = os.path.join(root, file)
+            caminho_relativo = os.path.relpath(origem_path, origem_base)
+            destino_path = os.path.join(backup_dir, caminho_relativo)
 
-=== Fecha XML ===
+            os.makedirs(os.path.dirname(destino_path), exist_ok=True)
+            shutil.copy2(origem_path, destino_path)
+            print(f"✅ Copiado: {caminho_relativo}")
+            copiados += 1
 
-echo "  <version>${API_VERSION}</version>" >> "$ARQUIVO_XML_FINAL" echo "</Package>" >> "$ARQUIVO_XML_FINAL"
+# === Finalização ===
+print()
+if copiados == 0:
+    print("⚠️ Nenhum arquivo foi copiado.")
+else:
+    print(f"✅ Backup finalizado! Total de arquivos copiados: {copiados}")
+    print(f"✅ Conteúdo salvo em: {backup_dir}")
 
-cp "$ARQUIVO_XML_FINAL" "$ARQUIVO_XML_VERSIONADO"
-
-echo "" success "✅  package.xml gerado com sucesso: $ARQUIVO_XML_FINAL" success "📁  FIM EXECUÇÃO: $(date '+%d/%m/%Y - %H:%M:%S')"
-
+print(f"\n🟢 FIM EXECUÇÃO: {datetime.now().strftime('%d/%m/%Y - %H:%M:%S')}")
