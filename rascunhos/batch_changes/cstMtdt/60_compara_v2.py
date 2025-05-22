@@ -1,91 +1,124 @@
-import json
-import csv
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+
 import os
+import csv
+import json
+from datetime import datetime
+from difflib import SequenceMatcher
 
-# Caminhos esperados (ajuste conforme necessário)
-ARQ_EXECUCAO = './_configUtil.json'
-ARQ_TABELA = './1_metadados/_src_VincParamRefCustom.csv'
-ARQ_XML = './1_metadados/_InfoParametrizadasInclCustom.csv'
-ARQ_SAIDA = './3_saida_xml/listaVinculosPrecisamCustom.csv'
+# === Função para converter caminhos estilo Git Bash para Windows ===
+def path_gitbash_para_windows(caminho):
+    if caminho.startswith("/"):
+        partes = caminho.strip("/").split("/", 1)
+        if len(partes) == 2 and len(partes[0]) == 1:
+            drive = partes[0].upper()
+            resto = partes[1]
+            return os.path.abspath(os.path.normpath(f"{drive}:/{resto}"))
+    return os.path.abspath(os.path.normpath(caminho))
 
-# Leitura do JSON de configuração
-with open(ARQ_EXECUCAO, 'r', encoding='utf-8-sig') as f:
+# === Leitura do JSON de entrada ===
+ARQ_EXECUCAO = '_configUtil.json'
+
+with open(ARQ_EXECUCAO, "r", encoding="utf-8") as f:
     config = json.load(f)
 
-avaliacao = config["infoEspecificaProcessos"]["avaliacaoCustomMdt"][0]
-customDeAvaliacao = avaliacao["customDeAvaliacao"]
-infoCopiaLocal = avaliacao["infoCopiaLocal"]
+# === Leitura dos diretórios ===
+DIR_PROJETOS_VSCODE = config.get("infoVscode", [{}])[0].get("dirPosixRepoVscode", "")
+DIR_PROJSF_TRABALHO_CUSTOM = config.get("infoEspecificaProcessos", {}).get("avaliacaoCustomMdt", [{}])[0].get("dirProjSfCustom", "")
+DIR_PROCESSO_CUSTOM = config.get("infoEspecificaProcessos", {}).get("avaliacaoCustomMdt", [{}])[0].get("nmdirProcessoCmdt", "")
 
-# Decide estrutura e lógica da chave
-if customDeAvaliacao == "CanalFormatoBrfMkt":
-    estrutura = infoCopiaLocal["WW2_CamposCanalFormato__mdt"]["detalhamentoRelacaoCmdt"]
-    campo_metadata = "WW2_CamposCanalFormato__mdt"
-    chave_primaria = ("defCanal", "defFormato")
-    campos_comuns = {
-        "CampoRelacObjetoFilho": infoCopiaLocal[campo_metadata].get("defCampoRelacionamentoFilho", ""),
-        "CampoRelacObjetoPai": infoCopiaLocal[campo_metadata].get("defCampoRelacionamentoObjetoPai", ""),
-        "TelaUtilizada": infoCopiaLocal[campo_metadata].get("TelaUtilizada", "")
-    }
-elif customDeAvaliacao == "NegocioCanalAdicionalComum":
-    estrutura = infoCopiaLocal["WW2_FormAdicionalComum__mdt"]["detalhamentoRelacaoCmdt"]
-    campo_metadata = "WW2_FormAdicionalComum__mdt"
-    chave_primaria = ("defNegocio", "defCanal")
-    campos_comuns = {
-        "CampoRelacObjetoFilho": "",  # Definir se necessário
-        "CampoRelacObjetoPai": "",    # Definir se necessário
-        "TelaUtilizada": infoCopiaLocal[campo_metadata].get("TelaUtilizada", "")
-    }
-else:
-    raise ValueError("customDeAvaliacao não suportado.")
+# === Monta os caminhos absolutos ===
+diretorio_base = path_gitbash_para_windows(f"{DIR_PROJETOS_VSCODE}{DIR_PROJSF_TRABALHO_CUSTOM}")
+diretorio_metadados = os.path.join(diretorio_base, DIR_PROCESSO_CUSTOM, "_1_metadados")
+diretorio_saida = os.path.join(diretorio_base, DIR_PROCESSO_CUSTOM, "_3_saida_xml")
 
-# Leitura dos registros XML existentes
-with open(ARQ_XML, 'r', encoding='utf-8-sig') as f:
-    reader = csv.DictReader(f, delimiter=';')
-    registros_xml = set()
-    for row in reader:
-        canal = row.get("CanalXml", "").strip()
-        formato = row.get("FormatoXml", "").strip()
-        negocio = row.get("NegocioXml", "").strip()
-        chave = (canal, formato) if customDeAvaliacao == "CanalFormatoBrfMkt" else (negocio, canal)
-        registros_xml.add(chave)
+arquivo_entrada = os.path.join(diretorio_metadados, "_DadoCustomMetadata_ref.csv")
+arquivo_custom = os.path.join(diretorio_metadados, "_InfoParametrizadasInclCustom.csv")
+arquivo_alteracao = os.path.join(diretorio_saida, "1_listaCustomAlteracao.csv")
+arquivo_criacao = os.path.join(diretorio_saida, "1_listavinculosPrecisamCustom.csv")
+arquivo_sem_alteracao = os.path.join(diretorio_saida, "CustomSemAlteracao.csv")
+arquivo_sem_param = os.path.join(diretorio_saida, "CustomSemParam.csv")
+arquivo_estatisticas = os.path.join(diretorio_saida, "estatisticas_comparacao.txt")
 
-# Leitura dos parâmetros esperados (tabela referência)
-with open(ARQ_TABELA, 'r', encoding='utf-8-sig') as f:
-    reader = csv.DictReader(f, delimiter=';')
-    parametros_tab = []
-    for row in reader:
-        canal = row.get("CodCanalTab", "").strip()
-        formato = row.get("FormatoTab", "").strip()
-        negocio = row.get("TaxNegocioTab", "").strip()
-        chave = (canal, formato) if customDeAvaliacao == "CanalFormatoBrfMkt" else (negocio, canal)
-        parametros_tab.append(chave)
+os.makedirs(diretorio_saida, exist_ok=True)
 
-# Geração dos registros ausentes
-saida = []
-for detalhe in estrutura:
-    chave_detalhe = tuple(detalhe.get(k, "").strip() for k in chave_primaria)
-    if chave_detalhe in parametros_tab and chave_detalhe not in registros_xml:
-        nome_arquivo = f"{campo_metadata}.{chave_detalhe[0]}_{chave_detalhe[1]}"
-        label = f"{chave_detalhe[0]} - {chave_detalhe[1]}"
-        linha = {
-            "arquivo": nome_arquivo,
-            "label": label,
-            "CampoRelacObjetoFilho": detalhe.get("defCampoRelacionamentoFilho", campos_comuns["CampoRelacObjetoFilho"]),
-            "CampoRelacObjetoPai": detalhe.get("defCampoRelacionamentoObjetoPai", campos_comuns["CampoRelacObjetoPai"]),
-            "CamposTela": detalhe.get("defCamposTela", ""),
-            "CamposObrigatorios": detalhe.get("defCamposObrigatorios", ""),
-            "Canal": detalhe.get("defCanal", ""),
-            "Formato": detalhe.get("defFormato", detalhe.get("defNegocio", "")),
-            "Objeto": detalhe.get("defObjeto", ""),
-            "TelaUtilizada": campos_comuns["TelaUtilizada"]
-        }
-        saida.append(linha)
+print(f"📄 Comparando arquivos: {arquivo_entrada} vs {arquivo_custom}\n")
 
-# Escrita do arquivo final
-os.makedirs(os.path.dirname(ARQ_SAIDA), exist_ok=True)
-with open(ARQ_SAIDA, 'w', newline='', encoding='utf-8-sig') as f_out:
-    writer = csv.DictWriter(f_out, fieldnames=saida[0].keys(), delimiter=';')
-    writer.writeheader()
-    writer.writerows(saida)
+def limpar(texto):
+    if texto is None:
+        return ''
+    return str(texto).strip().replace('\n', ' ').replace('\r', ' ')
 
-print(f"✔️ Arquivo gerado com {len(saida)} registros: {ARQ_SAIDA}")
+def similaridade(a, b):
+    return SequenceMatcher(None, a, b).ratio()
+
+with open(arquivo_entrada, 'r', encoding='utf-8-sig') as f_ref, \
+     open(arquivo_custom, 'r', encoding='utf-8-sig') as f_custom:
+
+    linhas_ref = list(csv.reader(f_ref))
+    linhas_custom = list(csv.reader(f_custom))
+
+cabecalho = linhas_ref[0]
+ref_dict = {linha[0]: linha for linha in linhas_ref[1:] if "RDC" not in linha[0].upper()}
+custom_dict = {linha[0]: linha for linha in linhas_custom}
+
+alteracoes = []
+sem_alteracao = []
+sem_param = []
+
+for nome_arquivo, ref_valores in ref_dict.items():
+    custom_valores = custom_dict.get(nome_arquivo)
+    if not custom_valores:
+        sem_param.append(ref_valores)
+        continue
+
+    campos_diferentes = []
+    for i in range(1, len(ref_valores)):
+        ref_campo = limpar(ref_valores[i])
+        custom_campo = limpar(custom_valores[i])
+        if ref_campo != custom_campo:
+            sim = similaridade(ref_campo, custom_campo)
+            if sim < 0.9:
+                campos_diferentes.append((cabecalho[i], ref_campo, custom_campo, f"{sim:.2f}"))
+
+    if campos_diferentes:
+        print(f"\n🔁 Diferenças encontradas em: {nome_arquivo}")
+        for campo, ref, custom, sim in campos_diferentes:
+            print(f" - Campo: {campo}\n   REF   : {ref}\n   CUSTOM: {custom}\n   Similaridade: {sim}")
+
+        resp = input("Deseja registrar como ALTERAÇÃO? (s/n): ").strip().lower()
+        if resp == 's':
+            alteracoes.append(ref_valores)
+        else:
+            sem_alteracao.append(ref_valores)
+    else:
+        sem_alteracao.append(ref_valores)
+
+# === Escrita dos arquivos ===
+with open(arquivo_alteracao, 'w', newline='', encoding='utf-8-sig') as f:
+    writer = csv.writer(f)
+    writer.writerow(cabecalho)
+    writer.writerows(alteracoes)
+
+with open(arquivo_sem_alteracao, 'w', newline='', encoding='utf-8-sig') as f:
+    writer = csv.writer(f)
+    writer.writerow(cabecalho)
+    writer.writerows(sem_alteracao)
+
+with open(arquivo_criacao, 'w', newline='', encoding='utf-8-sig') as f:
+    writer = csv.writer(f)
+    writer.writerow(cabecalho)
+    writer.writerows(sem_param)
+
+with open(arquivo_estatisticas, 'w', encoding='utf-8') as f:
+    f.write(f"# Estatísticas da comparação ({datetime.now().strftime('%Y-%m-%d %H:%M:%S')})\n")
+    f.write(f"Total analisados: {len(ref_dict)}\n")
+    f.write(f"Com alteração: {len(alteracoes)}\n")
+    f.write(f"Sem alteração: {len(sem_alteracao)}\n")
+    f.write(f"Sem parâmetro custom: {len(sem_param)}\n")
+
+print("\n✅ Comparação finalizada.")
+print(f"✏️ Alterações registradas : {len(alteracoes)}")
+print(f"✔️ Sem alteração          : {len(sem_alteracao)}")
+print(f"📭 Sem parâmetro (custom) : {len(sem_param)}")
