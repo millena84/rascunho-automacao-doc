@@ -9,6 +9,7 @@ from difflib import SequenceMatcher
 # Script python: 60_comparacao_paramCustom.py
 
 # Caminhos
+####>>>> REFAT
 arquivo_xml_custom = './1_metadados/_InfoParametrizadasInclCustom.csv'
 arquivo_tabela = './1_metadados/_src_VincParamRefCustom.csv'
 saida_alteracao = './3_saida_xml/1_listaCustomAlteracao.csv'
@@ -18,6 +19,22 @@ saida_sem_param = './3_saida_xml/CustomSemParam.csv'
 saida_sem_alteracao = './3_saida_xml/CustomSemAlteracao.csv'
 
 os.makedirs(os.path.dirname(saida_alteracao), exist_ok=True)
+
+####>>> V NOVA:
+def path_gitbash_para_windows(caminho):
+    partes = caminho(...)
+    return lalala
+## EXTRACAO DE DIRETORIOS (funciona no de copia - 5_copia)
+
+## FORMATACAO DIRETORIOS
+
+## EXTRACAO INFOS GERAIS CMDT
+
+## VERIFICAR CMDT_EM_AVAL PRA ESCOLHER O CAMINHO:
+### 1) FAZER COM CAN x FOR
+#### PEGAR INFOS GERAIS CAN x FOR
+#### QUANDO TIVER Q CRIAR CMDT: ESTRUTURA PARA CAPTURAR /CONFRONTAR DADO TAB x JSON (para pegar conteudo de dentro do json pra gravar no csv de saida)
+
 
 estatisticas = {
     'total_xml': 0,
@@ -152,6 +169,53 @@ with open(saida_alteracao, 'w', encoding='utf-8-sig', newline='') as f_out, \
             nao_aprovados.append((nome, canal_xml, formato_xml))
 
     contador = 0
+
+#####################
+ver onde encaixar isso
+linhas_saida = []
+
+# Percorre cada linha da tabela de referência
+for linha_tab in tabela_referencia:
+    canal_tab = linha_tab.get("CodCanalTab", "").strip()
+    formato_tab = linha_tab.get("FormatoTab", "").strip()
+    negocio_tab = linha_tab.get("TaxNegocioTab", "").strip()
+
+    # Define a chave dependendo do tipo de avaliação
+    if customDeAvaliacao == "CanalFormatoBrfMkt":
+        chave = (canal_tab, formato_tab)
+    else:
+        chave = (negocio_tab, canal_tab)
+
+    match_encontrado = None
+
+    # Procura no detalhamento do JSON uma combinação que bata com a chave da linha da tabela
+    for detalhe in estrutura_detalhamento_json:
+        if customDeAvaliacao == "CanalFormatoBrfMkt":
+            if detalhe.get("defCanal") == canal_tab and detalhe.get("defFormato") == formato_tab:
+                match_encontrado = detalhe
+                break
+        else:
+            if detalhe.get("defNegocio") == negocio_tab and detalhe.get("defCanal") == canal_tab:
+                match_encontrado = detalhe
+                break
+
+    # Se encontrou, monta a linha de saída
+    if match_encontrado:
+        linha_saida = {
+            "arquivo": f"{nome_metadata}.{canal_tab}_{formato_tab}.md-meta.xml",
+            "label": f"{canal_tab} - {formato_tab}",
+            "CampoRelacObjetoFilho": match_encontrado.get("defCampoRelacionamentoFilho", campos_padroes.get("CampoRelacObjetoFilho", "")),
+            "CampoRelacObjetoPai": match_encontrado.get("defCampoRelacionamentoObjetoPai", campos_padroes.get("CampoRelacObjetoPai", "")),
+            "CamposTela": match_encontrado.get("defCamposTela", campos_padroes.get("CamposTela", "")),
+            "CamposObrigatorios": match_encontrado.get("defCamposObrigatorios", campos_padroes.get("CamposObrigatorios", "")),
+            "Canal": canal_tab,
+            "Formato": formato_tab,
+            "Objeto": match_encontrado.get("defObjeto", campos_padroes.get("Objeto", "")),
+            "TelaUtilizada": campos_padroes.get("TelaUtilizada", "")
+        }
+        linhas_saida.append(linha_saida)
+######################
+         
     for item in referencia:
         if item['tem_dado_espec'] and (item['canal'], item['formato']) not in usados:
             nome_custom = f'CamposCanalFormato__{item["formato"]}__{contador:03d}-md-meta.xml'
