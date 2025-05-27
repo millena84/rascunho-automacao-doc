@@ -2,14 +2,12 @@
 # -*- coding: utf-8 -*-
 
 import os
-import shutil
 import json
-import csv
-from datetime import datetime
 
 # === CONFIGURAÇÕES ===
 CONFIG_PATH = "_configUtil.json"
 API_VERSION = "58.0"
+TIPO_COMPONENTE = "CustomMetadata"
 
 # === Função: conversor Git Bash → Windows ===
 def conversao_path_posix_para_windows(caminho):
@@ -33,66 +31,52 @@ DIR_COMPLETO_PROJETOSF_TRABALHO_CUSTOM = os.path.join(
     DIR_PROJETOS_VSCODE, DIR_PROJSF_TRABALHO_CUSTOM
 )
 
-# === Caminho das pastas com CSVs ===
+# === Caminhos das pastas de entrada ===
 DIR_CRIADOS = os.path.join(DIR_COMPLETO_PROJETOSF_TRABALHO_CUSTOM, "processaCmdt", "3_saida_xml", "criados")
 DIR_ALTERADOS = os.path.join(DIR_COMPLETO_PROJETOSF_TRABALHO_CUSTOM, "processaCmdt", "3_saida_xml", "alterados")
 
-# === Caminho do arquivo final ===
+# === Caminho de saída ===
 ARQUIVO_XML_FINAL = os.path.join(
     DIR_COMPLETO_PROJETOSF_TRABALHO_CUSTOM,
     "processaCmdt",
     "PackageParaDeployCmdt.xml"
 )
 
-# === Função auxiliar: leitura de arquivos CSV ===
-def extrair_componentes_dos_csvs(diretorio):
-    tipos = {}
+# === Função para extrair nomes de arquivos XML ===
+def extrair_nomes_xml(diretorio):
+    nomes = set()
     if not os.path.isdir(diretorio):
         print(f"⚠️ Pasta não encontrada: {diretorio}")
-        return tipos
+        return nomes
 
     for nome_arquivo in os.listdir(diretorio):
-        if nome_arquivo.endswith(".csv"):
-            caminho_arquivo = os.path.join(diretorio, nome_arquivo)
-            with open(caminho_arquivo, "r", encoding="utf-8") as csv_file:
-                for linha in csv_file:
-                    membro = linha.strip()
-                    if not membro or "," not in membro:
-                        continue
-                    tipo, nome = membro.split(",", 1)
-                    tipo = tipo.strip()
-                    nome = nome.strip()
-                    if tipo and nome:
-                        tipos.setdefault(tipo, set()).add(nome)
-    return tipos
+        if nome_arquivo.endswith("-meta.xml"):
+            nome = nome_arquivo.replace("-meta.xml", "")
+            nomes.add(nome)
+    return nomes
 
-# === Leitura dos componentes das duas pastas ===
-componentes_criados = extrair_componentes_dos_csvs(DIR_CRIADOS)
-componentes_alterados = extrair_componentes_dos_csvs(DIR_ALTERADOS)
+# === Coleta os nomes dos componentes ===
+componentes_criados = extrair_nomes_xml(DIR_CRIADOS)
+componentes_alterados = extrair_nomes_xml(DIR_ALTERADOS)
 
-# === Mescla dos componentes ===
-todos_componentes = {}
-for tipo_dict in [componentes_criados, componentes_alterados]:
-    for tipo, membros in tipo_dict.items():
-        todos_componentes.setdefault(tipo, set()).update(membros)
+# === Unifica todos os nomes ===
+todos_membros = sorted(componentes_criados.union(componentes_alterados))
 
-if not todos_componentes:
-    print("❌ Nenhum componente encontrado nas pastas 'criados' ou 'alterados'.")
+if not todos_membros:
+    print("❌ Nenhum componente encontrado nas pastas de entrada.")
     exit()
 
-# === Geração do XML ===
+# === Geração do package.xml ===
 with open(ARQUIVO_XML_FINAL, "w", encoding="utf-8") as xml:
     xml.write('<?xml version="1.0" encoding="UTF-8"?>\n')
     xml.write('<Package xmlns="http://soap.sforce.com/2006/04/metadata">\n')
-
-    for tipo, membros in sorted(todos_componentes.items()):
-        xml.write("  <types>\n")
-        for membro in sorted(membros):
-            xml.write(f"    <members>{membro}</members>\n")
-        xml.write(f"    <name>{tipo}</name>\n")
-        xml.write("  </types>\n")
-
+    xml.write("  <types>\n")
+    for membro in todos_membros:
+        xml.write(f"    <members>{membro}</members>\n")
+    xml.write(f"    <name>{TIPO_COMPONENTE}</name>\n")
+    xml.write("  </types>\n")
     xml.write(f"  <version>{API_VERSION}</version>\n")
     xml.write("</Package>\n")
 
-print(f"✅ XML gerado com sucesso: {ARQUIVO_XML_FINAL}")
+print(f"✅ Package gerado com sucesso com {len(todos_membros)} componentes.")
+print(f"📦 Caminho: {ARQUIVO_XML_FINAL}")
