@@ -1,0 +1,534 @@
+    "infoEqualizaTestes": {
+        "DETALHES_HIST_TESTE_AQUI": "",
+        "INFO_REF_PROD": {
+            "EXPLICACOES_TIPOS_TABS": "LALALAL",
+            "INFO_REGS_EXTRACAO": [
+                {
+                    "TAB_PRINC": "_JT_",
+                    "rec_ID": "idSf",
+                    "ID_UI_SF": "AUTONUMBER",
+                    "LINK": "LINK",
+                    "TABS_ADD": [
+                        {
+                            "TAB": "_IJT_",
+                            "ID_UI_SF": "AUTONUMBER",
+                            "rec_ID": "idSf",
+                            "LINK": "LINK"
+                        },
+                        {
+                            "TAB": "TAB2",
+                            "ID_UI_SF": "AUTONUMBER",
+                            "rec_ID": "idSf",
+                            "LINK": "LINK"
+                        }
+                    ],
+                    "TABS_PAR": [
+                        {
+                            "TAB": "_TPJT_",
+                            "ID_UI_SF": "AUTONUMBER",
+                            "rec_ID": "idSf",
+                            "LINK": "LINK"
+                        },
+                        {
+                            "TAB": "_GPATV_",
+                            "ID_UI_SF": "AUTONUMBER",
+                            "rec_ID": "idSf",
+                            "LINK": "LINK"
+                        },
+                        {
+                            "TAB": "_ITATV_",
+                            "ID_UI_SF": "AUTONUMBER",
+                            "rec_ID": "idSf",
+                            "LINK": "LINK"
+                        },
+                        {
+                            "TAB": "_PRATV_",
+                            "ID_UI_SF": "AUTONUMBER",
+                            "rec_ID": "idSf",
+                            "LINK": "LINK"
+                        },
+                                                {
+                            "TAB": "_GPATV2_",
+                            "ID_UI_SF": "AUTONUMBER",
+                            "rec_ID": "idSf",
+                            "LINK": "LINK"
+                        },
+                        {
+                            "TAB": "_ITATV2_",
+                            "ID_UI_SF": "AUTONUMBER",
+                            "rec_ID": "idSf",
+                            "LINK": "LINK"
+                        },
+                        {
+                            "TAB": "_PRATV2_",
+                            "ID_UI_SF": "AUTONUMBER",
+                            "rec_ID": "idSf",
+                            "LINK": "LINK"
+                        }
+                    ]
+                },
+                {
+                    "TAB_PRINC": "_SG_",
+                    "rec_ID": "idSfp2",
+                    "ID_UI_SF": "AUTONUMBERp2",
+                    "LINK": "LINK",
+                    "TABS_ADD": [
+                        {
+                            "TAB": "_ICSG_",
+                            "ID_UI_SF": "AUTONUMBER",
+                            "rec_ID": "idSf",
+                            "LINK": "LINK"
+                        },
+                        {
+                            "TAB": "_IATSG_",
+                            "ID_UI_SF": "AUTONUMBER",
+                            "rec_ID": "idSf",
+                            "LINK": "LINK"
+                        },
+                        {
+                            "TAB": "_TATRATVSG_",
+                            "ID_UI_SF": "AUTONUMBER",
+                            "rec_ID": "idSf",
+                            "LINK": "LINK"
+                        }
+                    ],
+                    "TABS_PAR": [
+                        {
+                            "TAB": "_NG_",
+                            "ID_UI_SF": "AUTONUMBER",
+                            "rec_ID": "idSf",
+                            "LINK": "LINK"
+                        },
+                        {
+                            "TAB": "_OPER_",
+                            "ID_UI_SF": "AUTONUMBER",
+                            "rec_ID": "idSf",
+                            "LINK": "LINK"
+                        },
+                        {
+                            "TAB": "_DST_",
+                            "ID_UI_SF": "AUTONUMBER",
+                            "rec_ID": "idSf",
+                            "LINK": "LINK"
+                        },
+                        {
+                            "TAB": "_CNTDBD_",
+                            "ID_UI_SF": "AUTONUMBER",
+                            "rec_ID": "idSf",
+                            "LINK": "LINK"
+                        }
+                    ]
+                },
+                {
+                    "TAB_PRINC": "_CM_",
+                    "rec_ID": "idSfp3",
+                    "ID_UI_SF": "AUTONUMBERp3",
+                    "LINK": "LINK",
+                    "TABS_ADD": [
+                        {
+                            "TAB": "_COIT_",
+                            "ID_UI_SF": "AUTONUMBER",
+                            "rec_ID": "idSf",
+                            "LINK": "LINK"
+                        },
+                        {
+                            "TAB": "_VNCCMBM_",
+                            "ID_UI_SF": "AUTONUMBER",
+                            "rec_ID": "idSf",
+                            "LINK": "LINK"
+                        },
+                        {
+                            "TAB": "_VNCCOITBFIT_",
+                            "ID_UI_SF": "AUTONUMBER",
+                            "rec_ID": "idSf",
+                            "LINK": "LINK"
+                        },
+                        {
+                            "TAB": "_COPCM_",
+                            "ID_UI_SF": "AUTONUMBER",
+                            "rec_ID": "idSf",
+                            "LINK": "LINK"
+                        },
+                        {
+                            "TAB": "_AGPCO_",
+                            "ID_UI_SF": "AUTONUMBER",
+                            "rec_ID": "idSf",
+                            "LINK": "LINK"
+                        },
+                        {
+                            "TAB": "_ITAGPCO_",
+                            "ID_UI_SF": "AUTONUMBER",
+                            "rec_ID": "idSf",
+                            "LINK": "LINK"
+                        }
+                    ],
+                    "TABS_PAR": [
+                        {
+                            "TAB": "_NG_",
+                            "ID_UI_SF": "AUTONUMBER",
+                            "rec_ID": "idSf",
+                            "LINK": "LINK"
+                        },
+                        {
+                            "TAB": "_TPCO_",
+                            "ID_UI_SF": "AUTONUMBER",
+                            "rec_ID": "idSf",
+                            "LINK": "LINK"
+                        },
+                        {
+                            "TAB": "_SGTO_",
+                            "ID_UI_SF": "AUTONUMBER",
+                            "rec_ID": "idSf",
+                            "LINK": "LINK"
+                        },
+                        {
+                            "TAB": "_FA_",
+                            "ID_UI_SF": "AUTONUMBER",
+                            "rec_ID": "idSf",
+                            "LINK": "LINK"
+                        },
+                        {
+                            "TAB": "_PD_",
+                            "ID_UI_SF": "AUTONUMBER",
+                            "rec_ID": "idSf",
+                            "LINK": "LINK"
+                        },
+                        {
+                            "TAB": "_CS_",
+                            "ID_UI_SF": "AUTONUMBER",
+                            "rec_ID": "idSf",
+                            "LINK": "LINK"
+                        },
+                        {
+                            "TAB": "_CA_",
+                            "ID_UI_SF": "AUTONUMBER",
+                            "rec_ID": "idSf",
+                            "LINK": "LINK"
+                        },
+                        {
+                            "TAB": "_DSPCA_",
+                            "ID_UI_SF": "AUTONUMBER",
+                            "rec_ID": "idSf",
+                            "LINK": "LINK"
+                        },
+                        {
+                            "TAB": "_TPDSP_",
+                            "ID_UI_SF": "AUTONUMBER",
+                            "rec_ID": "idSf",
+                            "LINK": "LINK"
+                        }
+                    ]
+                },
+                {
+                    "TAB_PRINC": "_BM_",
+                    "rec_ID": "idSfp3",
+                    "ID_UI_SF": "AUTONUMBERp3",
+                    "LINK": "LINK",
+                    "TABS_ADD": [
+                        {
+                            "TAB": "_BMIT_",
+                            "ID_UI_SF": "AUTONUMBER",
+                            "rec_ID": "idSf",
+                            "LINK": "LINK"
+                        }
+                    ],
+                    "TABS_PAR": [
+                        {
+                            "TAB": "_NG_",
+                            "ID_UI_SF": "AUTONUMBER",
+                            "rec_ID": "idSf",
+                            "LINK": "LINK"
+                        },
+                        {
+                            "TAB": "_EST_",
+                            "ID_UI_SF": "AUTONUMBER",
+                            "rec_ID": "idSf",
+                            "LINK": "LINK"
+                        },
+                        {
+                            "TAB": "_TPEST_",
+                            "ID_UI_SF": "AUTONUMBER",
+                            "rec_ID": "idSf",
+                            "LINK": "LINK"
+                        },
+                        {
+                            "TAB": "_SGTO_",
+                            "ID_UI_SF": "AUTONUMBER",
+                            "rec_ID": "idSf",
+                            "LINK": "LINK"
+                        },                        
+                        {
+                            "TAB": "_FA_",
+                            "ID_UI_SF": "AUTONUMBER",
+                            "rec_ID": "idSf",
+                            "LINK": "LINK"
+                        }
+                    ]
+                }
+            ],
+            "INFO_REGS_CARGA": [
+                {
+                    "TAB_PRINC": "_JT_",
+                    "rec_ID": "idSf",
+                    "ID_UI_SF": "AUTONUMBER",
+                    "LINK": "LINK",
+                    "TABS_ADD": [
+                        {
+                            "TAB": "_IJT_",
+                            "ID_UI_SF": "AUTONUMBER",
+                            "rec_ID": "idSf",
+                            "LINK": "LINK"
+                        },
+                        {
+                            "TAB": "TAB2",
+                            "ID_UI_SF": "AUTONUMBER",
+                            "rec_ID": "idSf",
+                            "LINK": "LINK"
+                        }
+                    ],
+                    "TABS_PAR": [
+                        {
+                            "TAB": "_TPJT_",
+                            "ID_UI_SF": "AUTONUMBER",
+                            "rec_ID": "idSf",
+                            "LINK": "LINK"
+                        },
+                        {
+                            "TAB": "_GPATV_",
+                            "ID_UI_SF": "AUTONUMBER",
+                            "rec_ID": "idSf",
+                            "LINK": "LINK"
+                        },
+                        {
+                            "TAB": "_ITATV_",
+                            "ID_UI_SF": "AUTONUMBER",
+                            "rec_ID": "idSf",
+                            "LINK": "LINK"
+                        },
+                        {
+                            "TAB": "_PRATV_",
+                            "ID_UI_SF": "AUTONUMBER",
+                            "rec_ID": "idSf",
+                            "LINK": "LINK"
+                        },
+                                                {
+                            "TAB": "_GPATV2_",
+                            "ID_UI_SF": "AUTONUMBER",
+                            "rec_ID": "idSf",
+                            "LINK": "LINK"
+                        },
+                        {
+                            "TAB": "_ITATV2_",
+                            "ID_UI_SF": "AUTONUMBER",
+                            "rec_ID": "idSf",
+                            "LINK": "LINK"
+                        },
+                        {
+                            "TAB": "_PRATV2_",
+                            "ID_UI_SF": "AUTONUMBER",
+                            "rec_ID": "idSf",
+                            "LINK": "LINK"
+                        }
+                    ]
+                },
+                {
+                    "TAB_PRINC": "_SG_",
+                    "rec_ID": "idSfp2",
+                    "ID_UI_SF": "AUTONUMBERp2",
+                    "LINK": "LINK",
+                    "TABS_ADD": [
+                        {
+                            "TAB": "_ICSG_",
+                            "ID_UI_SF": "AUTONUMBER",
+                            "rec_ID": "idSf",
+                            "LINK": "LINK"
+                        },
+                        {
+                            "TAB": "_IATSG_",
+                            "ID_UI_SF": "AUTONUMBER",
+                            "rec_ID": "idSf",
+                            "LINK": "LINK"
+                        },
+                        {
+                            "TAB": "_TATRATVSG_",
+                            "ID_UI_SF": "AUTONUMBER",
+                            "rec_ID": "idSf",
+                            "LINK": "LINK"
+                        }
+                    ],
+                    "TABS_PAR": [
+                        {
+                            "TAB": "_NG_",
+                            "ID_UI_SF": "AUTONUMBER",
+                            "rec_ID": "idSf",
+                            "LINK": "LINK"
+                        },
+                        {
+                            "TAB": "_OPER_",
+                            "ID_UI_SF": "AUTONUMBER",
+                            "rec_ID": "idSf",
+                            "LINK": "LINK"
+                        },
+                        {
+                            "TAB": "_DST_",
+                            "ID_UI_SF": "AUTONUMBER",
+                            "rec_ID": "idSf",
+                            "LINK": "LINK"
+                        },
+                        {
+                            "TAB": "_CNTDBD_",
+                            "ID_UI_SF": "AUTONUMBER",
+                            "rec_ID": "idSf",
+                            "LINK": "LINK"
+                        }
+                    ]
+                },
+                {
+                    "TAB_PRINC": "_CM_",
+                    "rec_ID": "idSfp3",
+                    "ID_UI_SF": "AUTONUMBERp3",
+                    "LINK": "LINK",
+                    "TABS_ADD": [
+                        {
+                            "TAB": "_COIT_",
+                            "ID_UI_SF": "AUTONUMBER",
+                            "rec_ID": "idSf",
+                            "LINK": "LINK"
+                        },
+                        {
+                            "TAB": "_VNCCMBM_",
+                            "ID_UI_SF": "AUTONUMBER",
+                            "rec_ID": "idSf",
+                            "LINK": "LINK"
+                        },
+                        {
+                            "TAB": "_VNCCOITBFIT_",
+                            "ID_UI_SF": "AUTONUMBER",
+                            "rec_ID": "idSf",
+                            "LINK": "LINK"
+                        },
+                        {
+                            "TAB": "_COPCM_",
+                            "ID_UI_SF": "AUTONUMBER",
+                            "rec_ID": "idSf",
+                            "LINK": "LINK"
+                        },
+                        {
+                            "TAB": "_AGPCO_",
+                            "ID_UI_SF": "AUTONUMBER",
+                            "rec_ID": "idSf",
+                            "LINK": "LINK"
+                        },
+                        {
+                            "TAB": "_ITAGPCO_",
+                            "ID_UI_SF": "AUTONUMBER",
+                            "rec_ID": "idSf",
+                            "LINK": "LINK"
+                        }
+                    ],
+                    "TABS_PAR": [
+                        {
+                            "TAB": "_NG_",
+                            "ID_UI_SF": "AUTONUMBER",
+                            "rec_ID": "idSf",
+                            "LINK": "LINK"
+                        },
+                        {
+                            "TAB": "_TPCO_",
+                            "ID_UI_SF": "AUTONUMBER",
+                            "rec_ID": "idSf",
+                            "LINK": "LINK"
+                        },
+                        {
+                            "TAB": "_SGTO_",
+                            "ID_UI_SF": "AUTONUMBER",
+                            "rec_ID": "idSf",
+                            "LINK": "LINK"
+                        },
+                        {
+                            "TAB": "_FA_",
+                            "ID_UI_SF": "AUTONUMBER",
+                            "rec_ID": "idSf",
+                            "LINK": "LINK"
+                        },
+                        {
+                            "TAB": "_PD_",
+                            "ID_UI_SF": "AUTONUMBER",
+                            "rec_ID": "idSf",
+                            "LINK": "LINK"
+                        },
+                        {
+                            "TAB": "_CS_",
+                            "ID_UI_SF": "AUTONUMBER",
+                            "rec_ID": "idSf",
+                            "LINK": "LINK"
+                        },
+                        {
+                            "TAB": "_CA_",
+                            "ID_UI_SF": "AUTONUMBER",
+                            "rec_ID": "idSf",
+                            "LINK": "LINK"
+                        },
+                        {
+                            "TAB": "_DSPCA_",
+                            "ID_UI_SF": "AUTONUMBER",
+                            "rec_ID": "idSf",
+                            "LINK": "LINK"
+                        },
+                        {
+                            "TAB": "_TPDSP_",
+                            "ID_UI_SF": "AUTONUMBER",
+                            "rec_ID": "idSf",
+                            "LINK": "LINK"
+                        }
+                    ]
+                },
+                {
+                    "TAB_PRINC": "_BM_",
+                    "rec_ID": "idSfp3",
+                    "ID_UI_SF": "AUTONUMBERp3",
+                    "LINK": "LINK",
+                    "TABS_ADD": [
+                        {
+                            "TAB": "_BMIT_",
+                            "ID_UI_SF": "AUTONUMBER",
+                            "rec_ID": "idSf",
+                            "LINK": "LINK"
+                        }
+                    ],
+                    "TABS_PAR": [
+                        {
+                            "TAB": "_NG_",
+                            "ID_UI_SF": "AUTONUMBER",
+                            "rec_ID": "idSf",
+                            "LINK": "LINK"
+                        },
+                        {
+                            "TAB": "_EST_",
+                            "ID_UI_SF": "AUTONUMBER",
+                            "rec_ID": "idSf",
+                            "LINK": "LINK"
+                        },
+                        {
+                            "TAB": "_TPEST_",
+                            "ID_UI_SF": "AUTONUMBER",
+                            "rec_ID": "idSf",
+                            "LINK": "LINK"
+                        },
+                        {
+                            "TAB": "_SGTO_",
+                            "ID_UI_SF": "AUTONUMBER",
+                            "rec_ID": "idSf",
+                            "LINK": "LINK"
+                        },                        
+                        {
+                            "TAB": "_FA_",
+                            "ID_UI_SF": "AUTONUMBER",
+                            "rec_ID": "idSf",
+                            "LINK": "LINK"
+                        }
+                    ]
+                }
+            ]
+        }
+    }
