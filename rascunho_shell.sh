@@ -1,3 +1,75 @@
+#GERA SO ED
+#!/bin/bash
+
+# Caminhos e arquivos
+CONFIG="./configuracao.json"
+SAIDA="./saida_entity_definition.json"
+
+# Função simples para pegar valores de arrays ou campos únicos
+get_json_value() {
+  local path="$1"
+  node -e "
+    const obj = require('$CONFIG');
+    const val = '$path'.split('.').reduce((o, k) => (o || {})[k], obj);
+    console.log(JSON.stringify(val));
+  "
+}
+
+# Pega os valores do JSON
+INFO_SELECAO=$(get_json_value "infoSelecao")
+INFO_EXCLUSAO=$(get_json_value "infoExclusao")
+CONSIDERAR_ADICIONAIS=$(get_json_value "considerarTabelasAdicionais" | tr -d '"')
+
+# Inicializa filtros
+FILTRO_WHERE=""
+
+# Processa infoSelecao
+if [[ "$INFO_SELECAO" != "[]" ]]; then
+  LIKE_PARTS=()
+  for termo in $(echo "$INFO_SELECAO" | jq -r '.[]'); do
+    [[ "$termo" != "" ]] && LIKE_PARTS+=("QualifiedApiName LIKE '%$termo%'")
+  done
+
+  if [[ ${#LIKE_PARTS[@]} -gt 0 ]]; then
+    FILTRO_WHERE+="($(IFS=" OR "; echo "${LIKE_PARTS[*]}"))"
+  fi
+fi
+
+# Processa infoExclusao
+if [[ "$INFO_EXCLUSAO" != "[]" ]]; then
+  NOT_PARTS=()
+  for termo in $(echo "$INFO_EXCLUSAO" | jq -r '.[]'); do
+    [[ "$termo" != "" ]] && NOT_PARTS+=("QualifiedApiName NOT LIKE '%$termo%'")
+  done
+
+  if [[ ${#NOT_PARTS[@]} -gt 0 ]]; then
+    [[ -n "$FILTRO_WHERE" ]] && FILTRO_WHERE+=" AND "
+    FILTRO_WHERE+="($(IFS=" AND "; echo "${NOT_PARTS[*]}"))"
+  fi
+fi
+
+# Considerar tabelas auxiliares?
+if [[ "$CONSIDERAR_ADICIONAIS" == "n" ]]; then
+  AUXILIARES="QualifiedApiName NOT LIKE '%__History%' AND QualifiedApiName NOT LIKE '%__Feed%' AND QualifiedApiName NOT LIKE '%ChangeEvent%' AND QualifiedApiName NOT LIKE '%Tag%' AND QualifiedApiName NOT LIKE '%Share%'"
+  [[ -n "$FILTRO_WHERE" ]] && FILTRO_WHERE+=" AND "
+  FILTRO_WHERE+="($AUXILIARES)"
+fi
+
+# Monta a SOQL final
+if [[ -n "$FILTRO_WHERE" ]]; then
+  SOQL="SELECT DurableId, QualifiedApiName FROM EntityDefinition WHERE $FILTRO_WHERE"
+else
+  SOQL="SELECT DurableId, QualifiedApiName FROM EntityDefinition"
+fi
+
+# Executa a query
+echo "🔎 Executando SOQL:"
+echo "$SOQL"
+sf data query --query "$SOQL" --json > "$SAIDA"
+echo "✅ Resultado salvo em: $SAIDA"
+
+
+# GERAVA TUDO JUNTO
 #!/bin/bash
 
 OUTDIR="./saida_metadados"
