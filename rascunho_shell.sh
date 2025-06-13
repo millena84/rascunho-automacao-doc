@@ -1,3 +1,77 @@
+# correcao json
+#!/bin/bash
+
+CONFIG="./configuracao.json"
+CHAVE_RAIZ="consultas tabelas internas.consultaEntityDefinition"
+
+# Função simples com leitura segura
+get_json_value() {
+  local path="$1"
+  node -e "
+    const fs = require('fs');
+    const obj = JSON.parse(fs.readFileSync('$CONFIG', 'utf-8'));
+    const val = '$path'.split('.').reduce((o, k) => o && o[k], obj);
+    console.log(JSON.stringify(val));
+  "
+}
+
+# Leitura da configuração
+INFO_SELECAO=$(get_json_value "$CHAVE_RAIZ.infoSelecao")
+INFO_EXCLUSAO=$(get_json_value "$CHAVE_RAIZ.infoExclusao")
+CONSIDERAR_ADICIONAIS=$(get_json_value "$CHAVE_RAIZ.considerarTabelasAdicionais" | tr -d '"')
+DIRETORIO_SAIDA=$(get_json_value "$CHAVE_RAIZ.diretorioSaida" | tr -d '"')
+
+# Cria diretório de saída se necessário
+mkdir -p "$DIRETORIO_SAIDA"
+ARQUIVO_SAIDA="$DIRETORIO_SAIDA/saida_entity_definition.json"
+
+# Início do filtro
+FILTRO_WHERE=""
+
+# Inclusão
+if [[ "$INFO_SELECAO" != "[]" ]]; then
+  INCLUDES=()
+  for termo in $(echo "$INFO_SELECAO" | jq -r '.[]'); do
+    [[ "$termo" != "" ]] && INCLUDES+=("QualifiedApiName LIKE '%$termo%'")
+  done
+  if [[ ${#INCLUDES[@]} -gt 0 ]]; then
+    FILTRO_WHERE+="($(IFS=" OR "; echo "${INCLUDES[*]}"))"
+  fi
+fi
+
+# Exclusão
+if [[ "$INFO_EXCLUSAO" != "[]" ]]; then
+  EXCLUDES=()
+  for termo in $(echo "$INFO_EXCLUSAO" | jq -r '.[]'); do
+    [[ "$termo" != "" ]] && EXCLUDES+=("QualifiedApiName NOT LIKE '%$termo%'")
+  done
+  if [[ ${#EXCLUDES[@]} -gt 0 ]]; then
+    [[ -n "$FILTRO_WHERE" ]] && FILTRO_WHERE+=" AND "
+    FILTRO_WHERE+="($(IFS=" AND "; echo "${EXCLUDES[*]}"))"
+  fi
+fi
+
+# Auxiliares
+if [[ "$CONSIDERAR_ADICIONAIS" == "n" ]]; then
+  AUX_EXCLUDE="QualifiedApiName NOT LIKE '%__History%' AND QualifiedApiName NOT LIKE '%__Feed%' AND QualifiedApiName NOT LIKE '%ChangeEvent%' AND QualifiedApiName NOT LIKE '%Tag%' AND QualifiedApiName NOT LIKE '%Share%'"
+  [[ -n "$FILTRO_WHERE" ]] && FILTRO_WHERE+=" AND "
+  FILTRO_WHERE+="($AUX_EXCLUDE)"
+fi
+
+# Monta SOQL
+if [[ -n "$FILTRO_WHERE" ]]; then
+  SOQL="SELECT DurableId, QualifiedApiName FROM EntityDefinition WHERE $FILTRO_WHERE"
+else
+  SOQL="SELECT DurableId, QualifiedApiName FROM EntityDefinition"
+fi
+
+# Executa
+echo "🔎 Executando SOQL:"
+echo "$SOQL"
+sf data query --query "$SOQL" --json > "$ARQUIVO_SAIDA"
+echo "✅ Resultado salvo em: $ARQUIVO_SAIDA"
+
+# json simplificado
 #GERA SO ED
 #!/bin/bash
 
