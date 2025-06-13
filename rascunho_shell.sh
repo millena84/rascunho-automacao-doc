@@ -1,3 +1,84 @@
+#exclusao jq:
+#!/bin/bash
+
+CONFIG="./configuracao.json"
+CHAVE_RAIZ="consultas tabelas internas.consultaEntityDefinition"
+
+# Função simples para extrair valores do JSON
+get_json_value() {
+  local path="$1"
+  node -e "
+    const fs = require('fs');
+    const obj = JSON.parse(fs.readFileSync('$CONFIG', 'utf-8'));
+    const val = '$path'.split('.').reduce((o, k) => o && o[k], obj);
+    console.log(JSON.stringify(val));
+  "
+}
+
+# Extrair configurações principais
+DIRETORIO_SAIDA=$(get_json_value "$CHAVE_RAIZ.diretorioSaida" | tr -d '"')
+ARQUIVO_SAIDA="$DIRETORIO_SAIDA/saida_entity_definition.json"
+CONSIDERAR_ADICIONAIS=$(get_json_value "$CHAVE_RAIZ.considerarTabelasAdicionais" | tr -d '"')
+
+# Extrair arrays como texto simples e separar via IFS
+INFO_SELECAO_RAW=$(get_json_value "$CHAVE_RAIZ.infoSelecao")
+INFO_EXCLUSAO_RAW=$(get_json_value "$CHAVE_RAIZ.infoExclusao")
+
+IFS=$'\n' read -rd '' -a LISTA_SELECAO <<< "$(echo "$INFO_SELECAO_RAW" | node -e 'let i="";process.stdin.on("data",d=>i+=d).on("end",()=>{JSON.parse(i).forEach(e=>console.log(e))})')"
+IFS=$'\n' read -rd '' -a LISTA_EXCLUSAO <<< "$(echo "$INFO_EXCLUSAO_RAW" | node -e 'let i="";process.stdin.on("data",d=>i+=d).on("end",()=>{JSON.parse(i).forEach(e=>console.log(e))})')"
+
+# Cria diretório se necessário
+mkdir -p "$DIRETORIO_SAIDA"
+
+# Monta WHERE
+FILTRO_WHERE=""
+
+# Inclusão
+if [[ "${LISTA_SELECAO[*]}" != "" ]]; then
+  for termo in "${LISTA_SELECAO[@]}"; do
+    [[ "$termo" != "" ]] && FILTRO_WHERE+="QualifiedApiName LIKE '%$termo%' OR "
+  done
+fi
+
+# Remove último OR, se necessário
+FILTRO_WHERE=${FILTRO_WHERE%" OR "}
+
+# Exclusão
+EXCLUSAO=""
+if [[ "${LISTA_EXCLUSAO[*]}" != "" ]]; then
+  for termo in "${LISTA_EXCLUSAO[@]}"; do
+    [[ "$termo" != "" ]] && EXCLUSAO+="QualifiedApiName NOT LIKE '%$termo%' AND "
+  done
+  EXCLUSAO=${EXCLUSAO%" AND "}
+fi
+
+# Campos auxiliares se não considerar adicionais
+AUX_ADICIONAIS=""
+if [[ "$CONSIDERAR_ADICIONAIS" == "n" ]]; then
+  AUX_ADICIONAIS="QualifiedApiName NOT LIKE '%__History%' AND QualifiedApiName NOT LIKE '%__Feed%' AND QualifiedApiName NOT LIKE '%ChangeEvent%' AND QualifiedApiName NOT LIKE '%Tag%' AND QualifiedApiName NOT LIKE '%Share%'"
+fi
+
+# Junta filtros com cuidado
+CONDICAO_FINAL=""
+
+[[ -n "$FILTRO_WHERE" ]] && CONDICAO_FINAL+="($FILTRO_WHERE)"
+[[ -n "$EXCLUSAO" ]] && { [[ -n "$CONDICAO_FINAL" ]] && CONDICAO_FINAL+=" AND "; CONDICAO_FINAL+="($EXCLUSAO)"; }
+[[ -n "$AUX_ADICIONAIS" ]] && { [[ -n "$CONDICAO_FINAL" ]] && CONDICAO_FINAL+=" AND "; CONDICAO_FINAL+="($AUX_ADICIONAIS)"; }
+
+# Monta query final
+if [[ -n "$CONDICAO_FINAL" ]]; then
+  SOQL="SELECT DurableId, QualifiedApiName FROM EntityDefinition WHERE $CONDICAO_FINAL"
+else
+  SOQL="SELECT DurableId, QualifiedApiName FROM EntityDefinition"
+fi
+
+# Executa
+echo "🔎 Executando query:"
+echo "$SOQL"
+sf data query --query "$SOQL" --json > "$ARQUIVO_SAIDA"
+echo "✅ JSON salvo em: $ARQUIVO_SAIDA"
+
+
 # correcao json
 #!/bin/bash
 
