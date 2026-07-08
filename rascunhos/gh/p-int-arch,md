@@ -1,0 +1,106 @@
+# Plano – Caso de teste engenheiro Salesforce
+## Contexto do desafio
+
+Este plano descreve um caso de uso de prova técnica para uma vaga de engenheiro Salesforce em ambiente financeiro regulado.
+
+Objetivo do desafio:
+- Projetar e implementar uma integração em que Salesforce **recebe eventos de transações financeiras** de um sistema externo (por exemplo, core banking ou motor de fraude).
+- Demonstrar boas práticas de arquitetura, resiliência, governança de dados e testes automatizados.
+
+## Objetivos de arquitetura
+
+- Garantir processamento idempotente de eventos (evitar duplicidade de registros em Salesforce).
+- Tratar erros de integração com estratégias de retry, DLQ e monitoramento.
+- Respeitar limites da plataforma Salesforce (API limits, heap, CPU).
+- Proteger dados sensíveis (PII, dados de transação) com criptografia, field-level security e auditoria.
+- Suportar alto volume de eventos em janelas de pico (ex.: fechamento de lote).
+
+## Escopo funcional do caso de uso
+
+- Receber eventos de transação (JSON) contendo: id da transação, id do cliente, valor, data/hora, tipo, status de fraude.
+- Registrar ou atualizar um objeto customizado em Salesforce (ex.: `Financial_Transaction__c`).
+- Ativar lógica adicional quando um evento indicar suspeita de fraude (ex.: criar Case, notificar usuário, disparar Platform Event).
+
+## Padrões de integração a considerar
+
+- Interface direta via REST API (middleware → Salesforce) com Apex REST ou API padrão.
+- Integração via Platform Events ou CDC para desacoplamento de sistemas internos.
+- Uso de Kafka/middleware para buffering e retry, mantendo Salesforce como consumidor final.
+
+Para cada padrão, o plano deve documentar:
+- Prós e contras em ambiente corporativo financeiro.
+- Impacto em latência, resiliência e observabilidade.
+- Requisitos adicionais (conectores, licenças, configurações).
+
+## Modelo de dados em Salesforce
+
+- Definir objetos e campos:
+  - `Financial_Transaction__c`
+  - Campos chave: `External_Transaction_Id__c`, `Account__c`, `Amount__c`, `Status__c`, `Fraud_Flag__c`, `Event_Timestamp__c`, etc.
+- Descrever relacionamentos (ex.: relacionamento com Account, Case).
+- Detalhar regras de governança:
+  - Quem pode ver/editar.
+  - Campos auditáveis (CreatedBy, LastModifiedBy, histórico).
+  - Políticas de retenção.
+
+## Fluxo técnico de integração
+
+Descrever passo a passo:
+
+1. Origem do evento (sistema externo, tópico Kafka ou API).
+2. Transformação/normalização de payload (no middleware ou no próprio Salesforce).
+3. Validação de esquema (campos obrigatórios, tipos).
+4. Chamada para Salesforce (REST, Platform Event, etc.).
+5. Lógica em Salesforce:
+   - Upsert da transação.
+   - Criação de Case em caso de fraude.
+   - Publicação de eventos internos, se necessário.
+6. Tratamento de falhas:
+   - Requisições com erro → retry, DLQ.
+   - Erros de negócio → registro em objeto de erro, dashboards.
+
+## Requisitos não funcionais e resiliência
+
+- Volume esperado por dia e por pico.
+- SLAs de processamento e tolerância a atrasos.
+- Estratégias de:
+  - Idempotência (chave externa, hash de payload, controle de versão).
+  - Retry exponential backoff.
+  - Circuit breaker, se aplicável.
+- Observabilidade:
+  - Logs estruturados.
+  - Métricas (contagem de sucesso/erro, latência).
+  - Alertas (integração parada, aumento de erros).
+
+## Estratégia de testes para a prova técnica
+
+- Testes unitários (Apex):
+  - Cobrir caminhos de sucesso e erro.
+  - Testar lógica de idempotência.
+- Testes de integração:
+  - Simular payloads válidos e inválidos.
+- Testes de contrato:
+  - Validar compatibilidade de esquema entre Salesforce e sistema externo.
+- Critérios mínimos:
+  - Cobertura > 85% nas classes de integração.
+  - Nenhum teste dependente de dados existentes em org (test isolation).
+
+## Critérios de aceite do desafio
+
+Para que a solução seja considerada “aprovada” na prova técnica, o plano define:
+
+- Documentação clara do fluxo (diagramas ou texto).
+- Código alinhado com boas práticas Salesforce (bulkification, security, naming).
+- Mecanismos explícitos de idempotência e observabilidade.
+- Testes automatizados com boa cobertura e cenários negativos.
+- Explicação das decisões de arquitetura e trade-offs.
+
+## Perguntas de esclarecimento
+
+Antes de implementar, o agente deve levantar ou registrar respostas para:
+
+- Volume diário e picos de eventos.
+- Tolerância a atraso de processamento.
+- Regras específicas de compliance e LGPD aplicáveis.
+- Sistemas envolvidos (nomes, tipos, responsabilidades).
+- Limitações internas (ex.: proibição de certos conectores ou serviços externos).
